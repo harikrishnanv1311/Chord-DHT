@@ -1,102 +1,87 @@
 version: "3"
+
 services:
   node1:
-    build: ./chord_node
+    build:
+      context: ./chord_node
     container_name: chord_node_1
-    ports:
-      - "5001:5000"
     environment:
       - NODE_IP=chord_node_1
       - NODE_PORT=5000
       - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_2
-      - SUCCESSOR_PORT=5000
+    ports:
+      - "5001:5000"
     networks:
-      - chord_network
+      chord_network:
+        aliases:
+          - chord_node_1
+    volumes:
+      - ./chord_node:/app
+    command: ["python", "-u", "api.py"]
 
   node2:
-    build: ./chord_node
+    build:
+      context: ./chord_node
     container_name: chord_node_2
-    ports:
-      - "5002:5000"
     environment:
       - NODE_IP=chord_node_2
       - NODE_PORT=5000
       - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_3
-      - SUCCESSOR_PORT=5000
+    ports:
+      - "5002:5000"
     networks:
-      - chord_network
+      chord_network:
+        aliases:
+          - chord_node_2
+    volumes:
+      - ./chord_node:/app
+    depends_on:
+      - node1
+    command: ["sh", "-c", "sleep 5 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
 
   node3:
-    build: ./chord_node
+    build:
+      context: ./chord_node
     container_name: chord_node_3
-    ports:
-      - "5003:5000"
     environment:
       - NODE_IP=chord_node_3
       - NODE_PORT=5000
       - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_4
-      - SUCCESSOR_PORT=5000
+    ports:
+      - "5003:5000"
     networks:
-      - chord_network
+      chord_network:
+        aliases:
+          - chord_node_3
+    volumes:
+      - ./chord_node:/app
+    depends_on:
+      - node1
+      - node2
+    command: ["sh", "-c", "sleep 10 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
 
   node4:
-    build: ./chord_node
+    build:
+      context: ./chord_node
     container_name: chord_node_4
-    ports:
-      - "5004:5000"
     environment:
       - NODE_IP=chord_node_4
       - NODE_PORT=5000
       - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_5
-      - SUCCESSOR_PORT=5000
-    networks:
-      - chord_network
-
-  node5:
-    build: ./chord_node
-    container_name: chord_node_5
     ports:
-      - "5005:5000"
-    environment:
-      - NODE_IP=chord_node_5
-      - NODE_PORT=5000
-      - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_6
-      - SUCCESSOR_PORT=5000
+      - "5004:5000"
     networks:
-      - chord_network
-
-  node6:
-    build: ./chord_node
-    container_name: chord_node_6
-    ports:
-      - "5006:5000"
-    environment:
-      - NODE_IP=chord_node_6
-      - NODE_PORT=5000
-      - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_7
-      - SUCCESSOR_PORT=5000
-    networks:
-      - chord_network
-
-  node7:
-    build: ./chord_node
-    container_name: chord_node_7
-    ports:
-      - "5007:5000"
-    environment:
-      - NODE_IP=chord_node_7
-      - NODE_PORT=5000
-      - M_BITS=7
-      - SUCCESSOR_HOST=chord_node_1
-      - SUCCESSOR_PORT=5000
-    networks:
-      - chord_network
+      chord_network:
+        aliases:
+          - chord_node_4
+    volumes:
+      - ./chord_node:/app
+    depends_on:
+      - node1
+      - node2
+      - node3
+    command: ["sh", "-c", "sleep 15 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
 
 networks:
   chord_network:
+    driver: bridge

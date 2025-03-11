@@ -1,6 +1,7 @@
 import hashlib
 import os
 import requests
+import time
 
 class ChordNode:
     def __init__(self, ip, port, m=160):
@@ -8,39 +9,64 @@ class ChordNode:
         self.port = port
         self.m = m  # number of bits in identifier space
         self.node_id = self.hash_ip(ip, port)
-        self.successor = None   # dict: {"node_id": ..., "ip": ..., "port": ...}
-        self.predecessor = None # dict: same structure
-        self.data_store = {}    # key-value store
-        # Finger table: list of m entries, each entry is a dict with "start" and "successor"
-        self.finger_table = [None] * self.m
+        self.successor = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+        self.predecessor = None
+        self.data_store = {}
+        # Initialize finger table with self as all successors initially
+        self.finger_table = [{"start": (self.node_id + (2**i)) % (2**self.m),
+                            "successor": {"node_id": self.node_id, "ip": self.ip, "port": self.port}}
+                           for i in range(self.m)]
+        print(f"Node initialized with ID: {self.node_id}")
 
     def hash_ip(self, ip, port):
+        """Hash the IP:port combination to get a node identifier in the Chord ring."""
         h = hashlib.sha1(f"{ip}:{port}".encode()).hexdigest()
         return int(h, 16) % (2**self.m)
 
+    def hash_key(self, key):
+        """Hash a key to determine its position in the Chord ring."""
+        h = hashlib.sha1(key.encode()).hexdigest()
+        return int(h, 16) % (2**self.m)
+
     def store_data(self, key, value):
+        """Store data in the local key-value store."""
         self.data_store[key] = value
         print(f"Stored key '{key}' -> '{value}' at node {self.node_id}")
+        return True
 
     def get_data(self, key):
+        """Retrieve data from the local key-value store."""
         return self.data_store.get(key, None)
 
-    def in_interval(self, x, a, b, inclusive_right=True):
-        # Checks if x is in (a, b] (if inclusive_right True) on a circular space of size 2**m.
-        if a < b:
-            return a < x <= b if inclusive_right else a < x < b
+    def in_interval(self, x, a, b, inclusive_right=True, inclusive_left=False):
+        """Check if x is in the interval (a, b] on a circular space."""
+        if inclusive_left:
+            if a == x:
+                return True
         else:
-            # Wrap-around: (a, 2**m-1] U [0, b]
-            return x > a or x <= b if inclusive_right else x > a or x < b
+            if a == x:
+                return False
+        
+        if inclusive_right:
+            if x == b:
+                return True
+        else:
+            if x == b:
+                return False
+            
+        if a < b:
+            return a < x < b or (inclusive_right and x == b) or (inclusive_left and x == a)
+        else:  # Wrap-around
+            return x > a or x < b or (inclusive_right and x == b) or (inclusive_left and x == a)
 
     def is_responsible(self, key_id):
-        # In Chord, node n is responsible for keys in (predecessor, n]
+        """Determine if this node is responsible for the given key_id."""
         if self.predecessor is None:
             return True  # Only node in network
         return self.in_interval(key_id, self.predecessor["node_id"], self.node_id, inclusive_right=True)
 
     def closest_preceding_finger(self, key_id):
-        # Scan finger table from highest index to lowest
+        """Find the closest preceding finger for a key_id."""
         for i in range(self.m - 1, -1, -1):
             if self.finger_table[i] is not None:
                 candidate = self.finger_table[i]["successor"]
@@ -49,185 +75,259 @@ class ChordNode:
         return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
 
     def find_successor(self, key_id):
-        # If this node is responsible, return self; otherwise, use finger table jumps.
-        if self.is_responsible(key_id):
-            return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
-        cp = self.closest_preceding_finger(key_id)
-        if cp["node_id"] == self.node_id:
-            return self.successor  # fallback
+        """Find the successor node for a key_id."""
+        # If key_id is in (n, successor], return successor
+        if self.in_interval(key_id, self.node_id, self.successor["node_id"], inclusive_right=True):
+            return self.successor
+        
+        # Otherwise, find the closest preceding finger and forward the query
+        n_prime = self.closest_preceding_finger(key_id)
+        
+        # If n_prime is self, return immediate successor
+        if n_prime["node_id"] == self.node_id:
+            return self.successor
+        
+        # Forward the query to n_prime
         try:
-            url = f"http://{cp['ip']}:{cp['port']}/find_successor?key_id={key_id}"
-            resp = requests.get(url)
+            url = f"http://{n_prime['ip']}:{n_prime['port']}/find_successor?key_id={key_id}"
+            resp = requests.get(url, timeout=5)
             if resp.status_code == 200:
                 return resp.json()
         except Exception as e:
-            print(f"Error contacting node {cp}: {e}")
-        return None
-
-    # --- Node join and update methods as per the paper ---
-
-    def join(self, bootstrap_address):
-        """
-        Join the network by contacting the bootstrap node.
-        Steps:
-         1. Find our immediate successor.
-         2. Get our predecessor from our successor.
-         3. Notify our successor.
-         4. (Key transfer happens later.)
-        """
-        try:
-            # Step 1: Find our immediate successor.
-            url = f"http://{bootstrap_address}/find_successor?key_id={self.node_id}"
-            resp = requests.get(url)
-            if resp.status_code == 200:
-                self.successor = resp.json()
-                print(f"Join: Set successor to {self.successor}")
-            else:
-                print("Join: Failed to get successor from bootstrap")
-        except Exception as e:
-            print(f"Join: Exception contacting bootstrap: {e}")
-
-        try:
-            # Step 2: Get our predecessor from our successor.
-            url = f"http://{self.successor['ip']}:{self.successor['port']}/predecessor"
-            resp = requests.get(url)
-            if resp.status_code == 200:
-                self.predecessor = resp.json()
-                print(f"Join: Set predecessor to {self.predecessor}")
-            else:
-                print("Join: Failed to get predecessor from successor")
-        except Exception as e:
-            print(f"Join: Exception contacting successor for predecessor: {e}")
-
-        try:
-            # Step 3: Notify our successor.
-            url = f"http://{self.successor['ip']}:{self.successor['port']}/notify"
-            requests.post(url, json={"node_id": self.node_id, "ip": self.ip, "port": self.port})
-        except Exception as e:
-            print(f"Join: Exception notifying successor: {e}")
-
-    def init_finger_table(self, bootstrap_address):
-        # First, join the network.
-        self.join(bootstrap_address)
-        # Copy finger table from successor.
-        try:
-            url = f"http://{self.successor['ip']}:{self.successor['port']}/finger_table"
-            resp = requests.get(url)
-            if resp.status_code == 200:
-                succ_ft = resp.json().get("finger_table", [])
-                self.finger_table = succ_ft.copy()
-                print(f"Copied finger table from successor: {succ_ft}")
-            else:
-                print("Failed to copy finger table from successor")
-        except Exception as e:
-            print(f"Error copying finger table: {e}")
-
-        # Adjust finger table entries.
-        for i in range(self.m):
-            start = (self.node_id + (2**i)) % (2**self.m)
-            try:
-                url = f"http://{self.successor['ip']}:{self.successor['port']}/find_successor?key_id={start}"
-                resp = requests.get(url)
-                if resp.status_code == 200:
-                    self.finger_table[i] = {"start": start, "successor": resp.json()}
-            except Exception as e:
-                print(f"Error adjusting finger table entry {i}: {e}")
-        print(f"Finger table for node {self.node_id} initialized: {self.finger_table}")
-        # Now update other nodes about our presence.
-        self.update_others()
-        # Transfer keys from our successor.
-        self.transfer_keys()
-
-    def update_finger_table(self, candidate, i):
-        """
-        Update the i-th finger if candidate lies in [self.node_id, finger[i].successor)
-        Then, recursively update our predecessor's finger table.
-        """
-        current = self.finger_table[i]["successor"]
-        if self.in_interval(candidate["node_id"], self.node_id, current["node_id"], inclusive_right=False):
-            # Update finger table entry.
-            self.finger_table[i]["successor"] = candidate
-            print(f"Node {self.node_id}: Updated finger[{i}] to candidate {candidate['node_id']}")
-            # Find predecessor and update its finger table, unless it's self.
-            if self.predecessor and self.predecessor["node_id"] != self.node_id:
-                try:
-                    url = f"http://{self.predecessor['ip']}:{self.predecessor['port']}/update_finger_table"
-                    requests.post(url, json={"candidate": candidate, "i": i})
-                except Exception as e:
-                    print(f"Error notifying predecessor for finger update: {e}")
-
-    def update_others(self):
-        """
-        For each finger entry i, find the node p whose finger table might need to be updated to point to self.
-        p = find_predecessor( (self.node_id - 2^(i-1)) mod 2^m )
-        Then, p.update_finger_table(self, i)
-        """
-        for i in range(self.m):
-            target = (self.node_id - (2**i)) % (2**self.m)
-            try:
-                p = self.find_predecessor(target)
-                if p["node_id"] != self.node_id:
-                    url = f"http://{p['ip']}:{p['port']}/update_finger_table"
-                    requests.post(url, json={"candidate": {"node_id": self.node_id, "ip": self.ip, "port": self.port}, "i": i})
-                    print(f"Updated node {p['node_id']} finger[{i}] with candidate {self.node_id}")
-            except Exception as e:
-                print(f"Error in update_others for finger {i}: {e}")
+            print(f"Error finding successor via {n_prime}: {e}")
+            return self.successor  # Fallback
+        
+        return self.successor  # Fallback
 
     def find_predecessor(self, key_id):
-        """
-        Iteratively find the predecessor of key_id.
-        """
+        """Find the predecessor node for a key_id."""
+        if self.successor["node_id"] == self.node_id:
+            return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+            
+        # If key_id is in (n, successor], return self
+        if self.in_interval(key_id, self.node_id, self.successor["node_id"], inclusive_right=True):
+            return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+        
         n_prime = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
-        while not self.in_interval(key_id, n_prime["node_id"], self.get_successor(n_prime)["node_id"], inclusive_right=True):
-            n_prime = self.get_closest_preceding_finger(n_prime, key_id)
+        n_succ = self.successor
+        
+        while not self.in_interval(key_id, n_prime["node_id"], n_succ["node_id"], inclusive_right=True):
+            if n_prime["node_id"] == self.node_id:
+                n_prime = self.closest_preceding_finger(key_id)
+                if n_prime["node_id"] == self.node_id:
+                    return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+            else:
+                try:
+                    url = f"http://{n_prime['ip']}:{n_prime['port']}/closest_preceding_finger?key_id={key_id}"
+                    resp = requests.get(url, timeout=5)
+                    if resp.status_code == 200:
+                        n_prime = resp.json()
+                    else:
+                        return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+                except Exception as e:
+                    print(f"Error finding closest preceding finger: {e}")
+                    return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+            
+            try:
+                url = f"http://{n_prime['ip']}:{n_prime['port']}/successor"
+                resp = requests.get(url, timeout=5)
+                if resp.status_code == 200:
+                    n_succ = resp.json()
+                else:
+                    return n_prime
+            except Exception as e:
+                print(f"Error getting successor of {n_prime}: {e}")
+                return n_prime
+                
         return n_prime
 
-    def get_successor(self, node_info):
-        """
-        For a given node_info, retrieve its successor by contacting its /node_id endpoint.
-        Here we assume node_info is local if it is self.
-        """
-        if node_info["node_id"] == self.node_id:
-            return self.successor
+    def join(self, bootstrap_address=None):
+        """Join the Chord ring using a bootstrap node."""
+        if bootstrap_address is None:
+            # First node in the network
+            print(f"First node in network with ID {self.node_id}")
+            self.predecessor = None
+            return True
+            
         try:
-            url = f"http://{node_info['ip']}:{node_info['port']}/node_id"
-            resp = requests.get(url)
+            print(f"Joining network via {bootstrap_address}")
+            # Find our successor through the bootstrap node
+            url = f"http://{bootstrap_address}/find_successor?key_id={self.node_id}"
+            resp = requests.get(url, timeout=5)
             if resp.status_code == 200:
-                # We assume the node responds with its successor pointer as well (or we maintain that separately)
-                # For simplicity, here we return the stored successor of the current node.
-                return self.successor
+                self.successor = resp.json()
+                print(f"Set successor to {self.successor}")
+                
+                # Now update our finger table
+                self.init_finger_table(bootstrap_address)
+                
+                # Notify our successor
+                self.notify_successor()
+                
+                # Transfer keys
+                self.transfer_keys_from_successor()
+                
+                return True
+            else:
+                print(f"Failed to get successor from bootstrap: {resp.status_code}, {resp.text}")
+                return False
         except Exception as e:
-            print(f"Error getting successor for node {node_info}: {e}")
-        return None
+            print(f"Error joining network: {e}")
+            return False
 
-    def get_closest_preceding_finger(self, node_info, key_id):
-        """
-        For a given node_info, query its finger table to find the closest preceding finger.
-        Here we assume we have a local copy of our finger table; in a real implementation,
-        we might need to query that node.
-        """
-        # For simplicity, if node_info is self, use our own finger table.
-        if node_info["node_id"] == self.node_id:
-            for i in range(self.m - 1, -1, -1):
-                if self.finger_table[i] is not None:
-                    candidate = self.finger_table[i]["successor"]
-                    if self.in_interval(candidate["node_id"], self.node_id, key_id, inclusive_right=False):
-                        return candidate
-        # Fallback to immediate successor.
-        return self.successor
-
-    def transfer_keys(self):
-        """
-        Request our successor to transfer keys for which we are now responsible.
-        That is, keys in (self.predecessor, self]
-        """
+    def init_finger_table(self, bootstrap_address):
+        """Initialize the finger table using entries from the bootstrap node."""
+        print(f"Initializing finger table via {bootstrap_address}")
+        
+        # Set the first finger's successor to our own successor
+        self.finger_table[0]["successor"] = self.successor
+        
         try:
-            url = f"http://{self.successor['ip']}:{self.successor['port']}/transfer_keys?new_node_id={self.node_id}"
-            resp = requests.get(url)
+            # Get predecessor of our successor
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/predecessor"
+            resp = requests.get(url, timeout=5)
+            if resp.status_code == 200 and resp.json():
+                self.predecessor = resp.json()
+                print(f"Set predecessor to {self.predecessor}")
+            else:
+                print("Failed to get predecessor from successor")
+        except Exception as e:
+            print(f"Error getting predecessor: {e}")
+        
+        # For each remaining finger
+        for i in range(1, self.m):
+            start = (self.node_id + (2**i)) % (2**self.m)
+            
+            # If start is in [n, finger[i-1].successor)
+            if self.in_interval(start, self.node_id, self.finger_table[i-1]["successor"]["node_id"], 
+                               inclusive_left=True, inclusive_right=False):
+                self.finger_table[i]["successor"] = self.finger_table[i-1]["successor"]
+            else:
+                # Otherwise, find the successor for this finger through the bootstrap
+                try:
+                    url = f"http://{bootstrap_address}/find_successor?key_id={start}"
+                    resp = requests.get(url, timeout=5)
+                    if resp.status_code == 200:
+                        self.finger_table[i]["successor"] = resp.json()
+                    else:
+                        print(f"Failed to find successor for finger {i}")
+                except Exception as e:
+                    print(f"Error finding successor for finger {i}: {e}")
+        
+        print(f"Finger table initialized: {self.finger_table}")
+        
+        # Update other nodes that should point to us
+        self.update_others()
+
+    def update_others(self):
+        """Update all nodes whose finger tables should point to us."""
+        print("Updating other nodes' finger tables")
+        
+        for i in range(self.m):
+            # Find the last node p whose i-th finger might be us
+            # p = find_predecessor((n - 2^(i-1)) mod 2^m)
+            p_id = (self.node_id - (2**i)) % (2**self.m)
+            p = self.find_predecessor(p_id)
+            
+            if p["node_id"] != self.node_id:
+                try:
+                    # Tell p to update its finger table with us as the i-th finger successor
+                    url = f"http://{p['ip']}:{p['port']}/update_finger_table"
+                    data = {
+                        "i": i,
+                        "s": {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+                    }
+                    resp = requests.post(url, json=data, timeout=5)
+                    if resp.status_code == 200:
+                        print(f"Updated node {p['node_id']} finger table entry {i}")
+                    else:
+                        print(f"Failed to update node {p['node_id']} finger table: {resp.status_code}")
+                except Exception as e:
+                    print(f"Error updating other node's finger table: {e}")
+
+    def update_finger_table(self, s, i):
+        """Update the i-th finger table entry to s if appropriate."""
+        if (self.finger_table[i]["successor"]["node_id"] == self.node_id or 
+            self.in_interval(s["node_id"], self.node_id, self.finger_table[i]["successor"]["node_id"], inclusive_right=False)):
+            
+            self.finger_table[i]["successor"] = s
+            print(f"Updated finger table entry {i} to node {s['node_id']}")
+            
+            # Propagate update to predecessor if needed
+            if self.predecessor and self.predecessor["node_id"] != s["node_id"]:
+                try:
+                    url = f"http://{self.predecessor['ip']}:{self.predecessor['port']}/update_finger_table"
+                    data = {"i": i, "s": s}
+                    requests.post(url, json=data, timeout=5)
+                except Exception as e:
+                    print(f"Error propagating finger update to predecessor: {e}")
+            
+            return True
+        return False
+
+    def notify_successor(self):
+        """Notify our successor that we might be its predecessor."""
+        try:
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/notify"
+            data = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+            resp = requests.post(url, json=data, timeout=5)
+            if resp.status_code == 200:
+                print(f"Notified successor {self.successor['node_id']}")
+                return True
+            else:
+                print(f"Failed to notify successor: {resp.status_code}")
+                return False
+        except Exception as e:
+            print(f"Error notifying successor: {e}")
+            return False
+
+    def notify(self, node):
+        """Process notification from another node that it might be our predecessor."""
+        if (self.predecessor is None or 
+            self.in_interval(node["node_id"], self.predecessor["node_id"], self.node_id, inclusive_right=False)):
+            
+            self.predecessor = node
+            print(f"Updated predecessor to node {node['node_id']}")
+            return True
+        return False
+
+    def transfer_keys_from_successor(self):
+        """Request keys from successor that should now belong to us."""
+        if self.successor["node_id"] == self.node_id:
+            return  # We are the only node
+            
+        try:
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/transfer_keys"
+            data = {"node_id": self.node_id}
+            resp = requests.post(url, json=data, timeout=5)
             if resp.status_code == 200:
                 keys = resp.json().get("keys", {})
                 for k, v in keys.items():
                     self.store_data(k, v)
-                print(f"Transferred keys: {list(keys.keys())}")
+                print(f"Received {len(keys)} keys from successor")
+                return True
+            else:
+                print(f"Failed to transfer keys: {resp.status_code}")
+                return False
         except Exception as e:
             print(f"Error transferring keys: {e}")
+            return False
+
+    def transfer_keys_to_predecessor(self, new_pred_id):
+        """Transfer keys that should belong to a new predecessor."""
+        keys_to_transfer = {}
+        keys_to_remove = []
+        
+        for k, v in self.data_store.items():
+            key_id = self.hash_key(k)
+            if self.in_interval(key_id, self.predecessor["node_id"] if self.predecessor else self.node_id, 
+                               new_pred_id, inclusive_right=True):
+                keys_to_transfer[k] = v
+                keys_to_remove.append(k)
+        
+        # Remove transferred keys
+        for k in keys_to_remove:
+            del self.data_store[k]
+            
+        print(f"Transferring {len(keys_to_transfer)} keys to predecessor")
+        return keys_to_transfer
