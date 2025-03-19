@@ -1,0 +1,65 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to Node1 (Docker)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/chord_node",
+                    "remoteRoot": "/app"
+                }
+            ]
+        },
+        {
+            "name": "Attach to Node2 (Docker)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5679
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/chord_node",
+                    "remoteRoot": "/app"
+                }
+            ]
+        },
+        {
+            "name": "Attach to Node3 (Docker)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5680
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/chord_node",
+                    "remoteRoot": "/app"
+                }
+            ]
+        },
+        {
+            "name": "Attach to Node4 (Docker)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5681
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/chord_node",
+                    "remoteRoot": "/app"
+                }
+            ]
+        }
+    ]
+}

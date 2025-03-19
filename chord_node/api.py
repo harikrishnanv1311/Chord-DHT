@@ -3,9 +3,17 @@ import hashlib
 import os
 import requests
 import time
+import debugpy
 from node import ChordNode
 
 app = Flask(__name__)
+
+DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() == "true"
+
+if DEBUG_MODE:
+    debugpy.listen(("0.0.0.0", 5678))  # Debugger listens on port 5678
+    print("⚡ Waiting for debugger to attach...")
+    debugpy.wait_for_client()  # Blocks execution until debugger is attached
 
 # Get environment variables
 NODE_IP = os.getenv("NODE_IP", "0.0.0.0")
@@ -71,6 +79,18 @@ def find_predecessor():
     predecessor = node.find_predecessor(key_id)
     return jsonify(predecessor)
 
+# REMOVE THIS WHEN STABILIZATION IS IMPLEMENTED
+@app.route('/set_successor', methods=['POST'])
+def set_successor():
+    data = request.get_json()
+    new_successor = {"node_id": data.get("node_id"), "ip": data.get("ip"), "port": data.get("port")}
+    # You might add additional checks to verify that new_successor
+    # falls into the correct interval. For minimal change, we simply update.
+    node.successor = new_successor
+    print(f"set_successor: Updated successor to {new_successor['node_id']}")
+    return jsonify({"message": f"Successor updated to {new_successor['node_id']}"}), 200
+
+
 @app.route('/update_finger_table', methods=['POST'])
 def update_finger_table():
     data = request.get_json()
@@ -83,19 +103,19 @@ def update_finger_table():
 def transfer_keys():
     data = request.get_json()
     new_pred_id = data.get("node_id")
-    keys = node.transfer_keys_to_predecessor(new_pred_id)
+    lower_bound = data.get("lower_bound")  # Optional lower bound
+    keys = node.transfer_keys_to_predecessor(new_pred_id, lower_bound)
     return jsonify({"keys": keys})
 
 @app.route('/store/<key>', methods=['POST'])
 def store_key(key):
     value = request.data.decode()
+    # Use a query parameter "forwarded" with a default value of "0"
+    forwarded = request.args.get("forwarded", "0") == "1"
     key_id = node.hash_key(key)
     
-    # Find the node responsible for this key
-    successor = node.find_successor(key_id)
-    
-    # If we're responsible, store locally
-    if successor["node_id"] == node.node_id:
+    # If this is a forwarded request (or this node is responsible), store locally.
+    if forwarded or node.is_responsible(key_id):
         node.store_data(key, value)
         return jsonify({
             "status": "success",
@@ -104,13 +124,16 @@ def store_key(key):
             "path": [node.node_id]
         })
     
-    # Otherwise, forward to the responsible node
+    # Otherwise, find the node responsible for this key
+    successor = node.find_successor(key_id)
     try:
-        url = f"http://{successor['ip']}:{successor['port']}/store/{key}"
-        resp = requests.post(url, data=value, timeout=5)
+        # When forwarding, append the query parameter so the next node knows
+        # that this is an internally forwarded request.
+        url = f"http://{successor['ip']}:{successor['port']}/store/{key}?forwarded=1"
+        resp = requests.post(url, data=value, timeout=300)
         resp_data = resp.json()
         
-        # Add ourselves to the path
+        # Append our node_id to the routing path for traceability.
         if "path" in resp_data:
             resp_data["path"].append(node.node_id)
         else:
@@ -126,13 +149,11 @@ def store_key(key):
 
 @app.route('/lookup/<key>', methods=['GET'])
 def lookup_key(key):
+    # Use the query parameter "forwarded" with a default of "0"
+    forwarded = request.args.get("forwarded", "0") == "1"
     key_id = node.hash_key(key)
     
-    # Find the node responsible for this key
-    successor = node.find_successor(key_id)
-    
-    # If we're responsible, look up locally
-    if successor["node_id"] == node.node_id:
+    if forwarded or node.is_responsible(key_id):
         value = node.get_data(key)
         if value is None:
             return jsonify({
@@ -150,13 +171,13 @@ def lookup_key(key):
             "path": [node.node_id]
         })
     
-    # Otherwise, forward to the responsible node
+    # Otherwise, forward the lookup request to the responsible node.
+    successor = node.find_successor(key_id)
     try:
-        url = f"http://{successor['ip']}:{successor['port']}/lookup/{key}"
-        resp = requests.get(url, timeout=5)
+        url = f"http://{successor['ip']}:{successor['port']}/lookup/{key}?forwarded=1"
+        resp = requests.get(url, timeout=300)
         resp_data = resp.json()
         
-        # Add ourselves to the path
         if "path" in resp_data:
             resp_data["path"].append(node.node_id)
         else:
