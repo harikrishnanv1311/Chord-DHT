@@ -10,7 +10,6 @@ This project implements a Distributed Hash Table (DHT) based on the [Chord proto
 - [Design & Architecture](#design--architecture)
 - [Setup & Execution](#setup--execution)
 - [API Endpoints](#api-endpoints)
-- [Team Contributions](#team-contributions)
 - [Results & Demo](#results--demo)
 - [Next Steps](#next-steps)
 
