@@ -1,3 +1,4 @@
+import threading
 from flask import Flask, request, jsonify
 import hashlib
 import os
@@ -5,15 +6,17 @@ import requests
 import time
 import debugpy
 from node import ChordNode
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() == "true"
 
 if DEBUG_MODE:
     debugpy.listen(("0.0.0.0", 5678))  # Debugger listens on port 5678
     print("⚡ Waiting for debugger to attach...")
-    debugpy.wait_for_client()  # Blocks execution until debugger is attached
+    # debugpy.wait_for_client()  # Blocks execution until debugger is attached
 
 # Get environment variables
 NODE_IP = os.getenv("NODE_IP", "0.0.0.0")
@@ -21,7 +24,17 @@ NODE_PORT = int(os.getenv("NODE_PORT", "5000"))
 M_BITS = int(os.getenv("M_BITS", "7"))  # 7-bit IDs for simulation
 
 # Initialize the Chord node
-node = ChordNode(ip=NODE_IP, port=NODE_PORT, m=M_BITS)
+# node = ChordNode(ip=NODE_IP, port=NODE_PORT, m=M_BITS)
+
+
+def stabilization_loop(node):
+    while True:
+        try:
+            node.stabilize()
+            node.fix_fingers()
+        except Exception as e:
+            print(f"[Background Thread Error] {e}")
+        time.sleep(5)  # run every 5 seconds
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -38,19 +51,46 @@ def get_node_info():
         "node_id": node.node_id,
         "ip": node.ip,
         "port": node.port,
-        "successor": node.successor,
-        "predecessor": node.predecessor,
-        "finger_table": [{"start": entry["start"], 
-                        "successor_id": entry["successor"]["node_id"]} 
-                       for entry in node.finger_table],
-        "data_count": len(node.data_store)
+        "successor": {
+            "node_id": node.successor["node_id"] if node.successor else None,
+            "ip": node.successor["ip"] if node.successor else None,
+            "port": node.successor["port"] if node.successor else None
+        } if node.successor else None,
+        "predecessor": {
+            "node_id": node.predecessor["node_id"] if node.predecessor else None,
+            "ip": node.predecessor["ip"] if node.predecessor else None,
+            "port": node.predecessor["port"] if node.predecessor else None
+        } if node.predecessor else None,
+        "finger_table": [
+            {   
+                "start": entry["start"], 
+                "successor_id": entry["successor"]["node_id"]
+            } for entry in node.finger_table
+        ],
+        "data_count": len(node.data_store),
+        "m": node.m
     })
+    # return jsonify({
+    #     "node_id": node.node_id,
+    #     "ip": node.ip,
+    #     "port": node.port,
+    #     "successor": node.successor,
+    #     "predecessor": node.predecessor,
+    #     "finger_table": [
+    #         {   
+    #             "start": entry["start"], 
+    #             "successor_id": entry["successor"]["node_id"]
+    #         } for entry in node.finger_table
+    #     ],
+    #     # "data_count": len(node.data_store),
+    #     "m": node.m
+    # })
 
 @app.route('/successor', methods=['GET'])
 def get_successor():
     return jsonify(node.successor)
 
-@app.route('/predecessor', methods=['GET'])
+@app.route('/get_predecessor', methods=['GET'])
 def get_predecessor():
     if node.predecessor:
         return jsonify(node.predecessor)
@@ -113,7 +153,7 @@ def store_key(key):
     # Use a query parameter "forwarded" with a default value of "0"
     forwarded = request.args.get("forwarded", "0") == "1"
     key_id = node.hash_key(key)
-    
+    print(f"key:{key} hash:{key_id}")
     # If this is a forwarded request (or this node is responsible), store locally.
     if forwarded or node.is_responsible(key_id):
         node.store_data(key, value)
@@ -215,6 +255,34 @@ def join():
             "node_id": node.node_id
         }), 500
 
+@app.route("/depart", methods=["POST"])
+def depart_node():
+    success = node.depart()
+    if success:
+        return jsonify({"status": "success", "message": f"Node {node.node_id} departed."}), 200
+    else:
+        return jsonify({"status": "error", "message": "Node departure failed."}), 500
+
+@app.route("/update_successor", methods=["POST"])
+def update_successor():
+    data = request.get_json()
+    node.successor = data.get("successor")
+    return jsonify({"status": "success"}), 200
+
+@app.route("/update_predecessor", methods=["POST"])
+def update_predecessor():
+    data = request.get_json()
+    node.predecessor = data.get("predecessor")
+    return jsonify({"status": "success"}), 200
+
+@app.route("/receive_keys", methods=["POST"])
+def receive_keys():
+    data = request.get_json()
+    keys = data.get("data", {})
+    node.data_store.update(keys)
+    return jsonify({"status": "received"}), 200
+
+
 @app.route('/finger_table', methods=['GET'])
 def get_finger_table():
     return jsonify({
@@ -230,7 +298,60 @@ def get_data_store():
         "data": node.data_store
     })
 
+def get_node_state():
+    """Return the current state of this node for visualization purposes."""
+    node_state = {
+        "node_id": node.node_id,
+        "ip": node.ip,
+        "port": node.port,
+        "successor": node.successor,
+        "predecessor": node.predecessor,
+        "finger_table": [
+            {
+                "start": entry["start"],
+                "successor": entry["successor"]
+            } for entry in node.finger_table
+        ],
+        "m": node.m
+    }
+    return node_state
+
+# Also add an endpoint to get state of all known nodes
+@app.route('/network_state', methods=['GET'])
+def get_network_state():
+    """Return the current state of all known nodes in the network."""
+    visited = set([node.node_id])
+    nodes = [get_node_state()]
+    print(nodes)
+    current = node.successor
+    max_nodes = 20
+    count = 0
+    
+    while current["node_id"] != node.node_id and count < max_nodes:
+        if current["node_id"] in visited:
+            break
+            
+        try:
+            url = f"http://{current['ip']}:{current['port']}/node_info"
+            resp = requests.get(url, timeout=2)
+            if resp.status_code == 200:
+                node_data = resp.json()
+                nodes.append(node_data)
+                visited.add(current["node_id"])
+                current = node_data["successor"]
+        except Exception as e:
+            print(f"Error fetching node state: {e}")
+            
+        count += 1
+    res = jsonify({"nodes": nodes})
+    print("res")
+    print(res.get_data(as_text=True))
+    return res
+
 if __name__ == "__main__":
-    # Wait a bit to ensure all containers in network are up
-    time.sleep(2)
+    node = ChordNode(ip=NODE_IP, port=NODE_PORT, m=M_BITS)
+    # node.join(bootstrap_address="0.0.0.0:5000")
+
+    t = threading.Thread(target=stabilization_loop, args=(node,), daemon=True)
+    t.start()
     app.run(host="0.0.0.0", port=NODE_PORT, debug=False)

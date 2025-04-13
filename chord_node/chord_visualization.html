@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chord Protocol Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .chord-ring {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .node {
+            cursor: pointer;
+        }
+        .node circle {
+            fill: #3182CE;
+            stroke: #2C5282;
+            stroke-width: 2px;
+        }
+        .node.selected circle {
+            fill: #E53E3E;
+            stroke-width: 3px;
+        }
+        .link {
+            stroke: #4FD1C5;
+            stroke-width: 2px;
+        }
+        .finger {
+            stroke: rgba(66, 153, 225, 0.6);
+            stroke-width: 1.5px;
+            stroke-dasharray: 3,3;
+            fill: none;
+        }
+        .finger.highlighted {
+            stroke: #F56565;
+            stroke-width: 2px;
+            stroke-dasharray: none;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .node-details {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #EDF2F7;
+        }
+        .status-error {
+            background-color: #FED7D7;
+            color: #C53030;
+        }
+        .highlighted-row {
+            background-color: #FED7D7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chord Protocol Live Visualization</h1>
+        
+        <div class="controls">
+            <label>
+                Bootstrap Node:
+                <input type="text" id="bootstrapNode" value="0.0.0.0:5001" />
+            </label>
+            <button id="refreshBtn">Refresh</button>
+            <label>
+                <input type="checkbox" id="showAllFingers" />
+                Show All Fingers
+            </label>
+            <div id="statusMessage" class="status-message" style="display: none;"></div>
+        </div>
+        
+        <div class="chord-ring" id="chordRing"></div>
+        
+        <div class="node-details" id="nodeDetails">
+            <h3>Select a node to see details</h3>
+        </div>
+    </div>
+
+    <script>
+        // Visualization code
+        const width = 800;
+        const height = 600;
+        const radius = Math.min(width, height) / 2 - 50;
+        
+        let nodes = [];
+        let selectedNode = null;
+        let showAllFingers = false;
+        let highlightedFinger = null;
+        let maxId = Math.pow(2, 160); // Default for SHA-1
+        
+        // Set up SVG
+        const svg = d3.select("#chordRing")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", `translate(${width/2}, ${height/2})`);
+        
+        // Add a circle for the Chord ring
+        svg.append("circle")
+            .attr("r", radius)
+            .attr("fill", "none")
+            .attr("stroke", "#CBD5E0")
+            .attr("stroke-width", 2);
+        
+        // Add arrow markers
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("markerWidth", 10)
+            .attr("markerHeight", 7)
+            .attr("refX", 9)
+            .attr("refY", 3.5)
+            .attr("orient", "auto")
+            .append("polygon")
+            .attr("points", "0 0, 10 3.5, 0 7")
+            .attr("fill", "#4FD1C5");
+        
+        svg.append("defs").append("marker")
+            .attr("id", "fingerArrow")
+            .attr("markerWidth", 10)
+            .attr("markerHeight", 7)
+            .attr("refX", 9)
+            .attr("refY", 3.5)
+            .attr("orient", "auto")
+            .append("polygon")
+            .attr("points", "0 0, 10 3.5, 0 7")
+            .attr("fill", "rgba(66, 153, 225, 0.6)");
+        
+        // Get node position on the circle
+        function getNodePosition(id) {
+            const angle = (id / maxId) * 2 * Math.PI - Math.PI/2;
+            return {
+                x: radius * Math.cos(angle),
+                y: radius * Math.sin(angle)
+            };
+        }
+        
+        // Draw ID markers around the ring
+        function drawIdMarkers() {
+            // Remove existing markers
+            svg.selectAll(".id-marker, .id-label").remove();
+            
+            const markers = [];
+            for (let i = 0; i < 8; i++) {
+                markers.push(Math.floor(i * maxId / 8));
+            }
+            
+            markers.forEach(id => {
+                const pos = getNodePosition(id);
+                
+                svg.append("circle")
+                    .attr("class", "id-marker")
+                    .attr("cx", pos.x)
+                    .attr("cy", pos.y)
+                    .attr("r", 2)
+                    .attr("fill", "#CBD5E0");
+                
+                const textPos = {
+                    x: pos.x * 1.1,
+                    y: pos.y * 1.1
+                };
+                
+                svg.append("text")
+                    .attr("class", "id-label")
+                    .attr("x", textPos.x)
+                    .attr("y", textPos.y)
+                    .attr("text-anchor", textPos.x > 0 ? "start" : "end")
+                    .attr("dominant-baseline", textPos.y > 0 ? "hanging" : "auto")
+                    .attr("font-size", "10")
+                    .attr("fill", "#718096")
+                    .text(maxId <= 128 ? id : id.toExponential(2));
+            });
+        }
+        
+        // Handle node selection
+        function selectNode(d) {
+            console.log("Node selected:", d);
+            selectedNode = d;
+            updateNodeDetails();
+            updateVisualization();
+        }
+        
+        // Update the visualization
+        function updateVisualization() {
+            // Clear existing elements
+            svg.selectAll(".node").remove();
+            svg.selectAll(".link").remove();
+            svg.selectAll(".finger").remove();
+            
+            // Draw successor links
+            nodes.forEach(node => {
+                const startPos = getNodePosition(node.node_id);
+                const endPos = getNodePosition(node.successor.node_id);
+                
+                // Draw curved path for successor link
+                const dx = endPos.x - startPos.x;
+                const dy = endPos.y - startPos.y;
+                const dr = Math.sqrt(dx * dx + dy * dy) * 1.2;
+                
+                svg.append("path")
+                    .attr("class", "link")
+                    .attr("d", `M${startPos.x},${startPos.y}A${dr},${dr} 0 0,1 ${endPos.x},${endPos.y}`)
+                    .attr("marker-end", "url(#arrowhead)");
+            });
+            
+            // Draw finger table connections
+            nodes.forEach(node => {
+                if (!showAllFingers && (!selectedNode || node.node_id !== selectedNode.node_id)) return;
+                
+                node.finger_table.forEach((finger, index) => {
+                    const startPos = getNodePosition(node.node_id);
+                    const endPos = getNodePosition(finger.successor.node_id);
+                    
+                    // Calculate control point for curve
+                    const midX = (startPos.x + endPos.x) / 2;
+                    const midY = (startPos.y + endPos.y) / 2;
+                    const dx = endPos.x - startPos.x;
+                    const dy = endPos.y - startPos.y;
+                    const normLength = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Avoid division by zero
+                    if (normLength === 0) return;
+                    
+                    // Perpendicular direction
+                    const perpX = -dy / normLength;
+                    const perpY = dx / normLength;
+                    
+                    // Curve strength
+                    const curveFactor = Math.min(normLength / 100, 1) * 50;
+                    
+                    const ctrlX = midX + perpX * curveFactor;
+                    const ctrlY = midY + perpY * curveFactor;
+                    
+                    // Create path for finger
+                    svg.append("path")
+                        .attr("class", `finger ${(highlightedFinger === index && selectedNode && selectedNode.node_id === node.node_id) ? "highlighted" : ""}`)
+                        .attr("d", `M${startPos.x},${startPos.y} Q${ctrlX},${ctrlY} ${endPos.x},${endPos.y}`)
+                        .attr("marker-end", "url(#fingerArrow)")
+                        .attr("data-node-id", node.node_id)
+                        .attr("data-finger-index", index);
+                });
+            });
+            
+            // Create individual node elements (cannot use data binding here because of selection issues)
+            nodes.forEach(node => {
+                const pos = getNodePosition(node.node_id);
+                
+                const nodeGroup = svg.append("g")
+                    .attr("class", `node ${selectedNode && node.node_id === selectedNode.node_id ? "selected" : ""}`)
+                    .attr("transform", `translate(${pos.x}, ${pos.y})`)
+                    .attr("data-id", node.node_id);
+                
+                // Add click event to the node group
+                nodeGroup.on("click", function() {
+                    const clickedNodeId = d3.select(this).attr("data-id");
+                    const clickedNode = nodes.find(n => n.node_id.toString() === clickedNodeId);
+                    if (clickedNode) {
+                        selectNode(clickedNode);
+                    }
+                });
+                
+                // Add circle for the node
+                nodeGroup.append("circle")
+                    .attr("r", 10);
+                
+                // Add node ID label
+                nodeGroup.append("text")
+                    .attr("dx", 0)
+                    .attr("dy", -15)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "12")
+                    .text(node.node_id);
+            });
+        }
+        
+        // Update node details panel
+        function updateNodeDetails() {
+            const detailsDiv = document.getElementById("nodeDetails");
+            
+            if (!selectedNode) {
+                return;
+            }
+            
+            let html = `
+                <h3>Node ${selectedNode.node_id}</h3>
+                <div>
+                    <p><strong>IP:</strong> ${selectedNode.ip}</p>
+                    <p><strong>Port:</strong> ${selectedNode.port}</p>
+                    <p><strong>Successor:</strong> ${selectedNode.successor.node_id}</p>
+                    <p><strong>Predecessor:</strong> ${selectedNode.predecessor ? selectedNode.predecessor.node_id : "None"}</p>
+                </div>
+                
+                <h4>Finger Table</h4>
+                <table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>Start</th>
+                            <th>Successor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            selectedNode.finger_table.forEach((finger, index) => {
+                html += `
+                    <tr data-finger-index="${index}" class="${highlightedFinger === index ? 'highlighted-row' : ''}">
+                        <td>${index}</td>
+                        <td>${finger.start}</td>
+                        <td>${finger.successor.node_id}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            detailsDiv.innerHTML = html;
+            
+            // Add event listeners to the rows after DOM is updated
+            const rows = detailsDiv.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+                const index = parseInt(row.getAttribute("data-finger-index"));
+                row.addEventListener("mouseover", () => highlightFinger(index));
+                row.addEventListener("mouseout", () => unhighlightFinger());
+            });
+        }
+        
+        // Highlight finger on hover
+        function highlightFinger(index) {
+            highlightedFinger = index;
+            updateVisualization();
+            
+            // Also highlight the table row
+            if (selectedNode) {
+                const rows = document.querySelectorAll("tbody tr");
+                rows.forEach(row => {
+                    const rowIndex = parseInt(row.getAttribute("data-finger-index"));
+                    if (rowIndex === index) {
+                        row.style.backgroundColor = "#FED7D7";
+                    } else {
+                        row.style.backgroundColor = "";
+                    }
+                });
+            }
+        }
+        
+        function unhighlightFinger() {
+            highlightedFinger = null;
+            updateVisualization();
+            
+            // Remove highlighting from table rows
+            const rows = document.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+                row.style.backgroundColor = "";
+            });
+        }
+        
+        // Display status message
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById("statusMessage");
+            statusDiv.textContent = message;
+            statusDiv.style.display = "block";
+            
+            if (isError) {
+                statusDiv.classList.add("status-error");
+            } else {
+                statusDiv.classList.remove("status-error");
+            }
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                statusDiv.style.display = "none";
+            }, 5000);
+        }
+        
+        // Fetch network state from a node
+        async function fetchNetworkState() {
+            const bootstrapNode = document.getElementById("bootstrapNode").value;
+            
+            try {
+                // Use AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(`http://${bootstrapNode}/network_state`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    nodes = data.nodes;
+                    
+                    // Get the maximum ID to determine the scale
+                    if (nodes.length > 0 && nodes[0].m) {
+                        maxId = Math.pow(2, nodes[0].m);
+                    }
+                    
+                    // Clear selection
+                    selectedNode = null;
+                    
+                    // Redraw everything
+                    drawIdMarkers();
+                    updateVisualization();
+                    updateNodeDetails();
+                    
+                    showStatus(`Successfully connected to ${bootstrapNode}`);
+                } else {
+                    showStatus(`Failed to fetch network state: ${response.statusText}`, true);
+                }
+            } catch (error) {
+                console.error("Error fetching network state:", error);
+                let errorMessage = error.name === "AbortError" ? 
+                    "Connection timed out" : `Error: ${error.message}`;
+                showStatus(`Error connecting to node: ${errorMessage}`, true);
+            }
+        }
+        
+        // Event listeners
+        document.getElementById("refreshBtn").addEventListener("click", fetchNetworkState);
+        document.getElementById("showAllFingers").addEventListener("change", function() {
+            showAllFingers = this.checked;
+            updateVisualization();
+        });
+        
+        // Initialize
+        drawIdMarkers();
+        fetchNetworkState();
+        
+        // Setup auto-refresh
+        setInterval(fetchNetworkState, 5000);
+    </script>
+</body>
+</html>

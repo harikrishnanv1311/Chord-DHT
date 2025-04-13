@@ -1,7 +1,9 @@
 import hashlib
 import os
 import requests
+import threading
 import time
+
 
 class ChordNode:
     def __init__(self, ip, port, m=160):
@@ -9,6 +11,7 @@ class ChordNode:
         self.port = port
         self.m = m  # number of bits in identifier space
         self.node_id = self.hash_ip(ip, port)
+        self.fix_finger_index = 0
         self.successor = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
         self.predecessor = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
         self.data_store = {}
@@ -91,7 +94,7 @@ class ChordNode:
         # Forward the query to n_prime
         try:
             url = f"http://{n_prime['ip']}:{n_prime['port']}/find_successor?key_id={key_id}"
-            resp = requests.get(url, timeout=300)
+            resp = requests.get(url, timeout=30)
             if resp.status_code == 200:
                 return resp.json()
         except Exception as e:
@@ -161,7 +164,7 @@ class ChordNode:
 
 
                 # *** New: Get the old predecessor from our successor ***
-                url_pred = f"http://{self.successor['ip']}:{self.successor['port']}/predecessor"
+                url_pred = f"http://{self.successor['ip']}:{self.successor['port']}/get_predecessor"
                 resp_pred = requests.get(url_pred, timeout=300)
                 if resp_pred.status_code == 200 and resp_pred.json():
                     old_pred = resp_pred.json()
@@ -175,7 +178,7 @@ class ChordNode:
 
                 # REMOVE THIS WHEN STABILIZATION ALGORITHM IS IMPLEMENTED
                 # Ask our predecessor to update its successor pointer to us
-                self.update_predecessor_successor()
+                # self.update_predecessor_successor()
                 
                 # Notify our successor
                 self.notify_successor()
@@ -203,7 +206,7 @@ class ChordNode:
         
         try:
             # Get predecessor of our successor
-            url = f"http://{self.successor['ip']}:{self.successor['port']}/predecessor"
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/get_predecessor"
             resp = requests.get(url, timeout=300)
             print(f"Response returned from init_finger_table() while fetching predecessor of successor {resp}")
             if resp.status_code == 200 and resp.json():
@@ -377,3 +380,63 @@ class ChordNode:
             
         print(f"Transferring {len(keys_to_transfer)} keys to predecessor using lower bound {lower_bound}")
         return keys_to_transfer
+
+    def as_dict(self):
+        return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
+
+    def stabilize(self):
+        """Verify your immediate successor and tell it about yourself."""
+        try:
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/get_predecessor"
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                x = response.json()
+                if x is not None and self.in_interval(x["node_id"], self.node_id, self.successor["node_id"]):
+                    self.successor = x
+
+            url = f"http://{self.successor['ip']}:{self.successor['port']}/notify"
+            requests.post(url, json=self.as_dict(), timeout=5)
+        except requests.RequestException:
+            print(f"[{self.node_id}] Could not contact successor {self.successor['node_id']}, keeping current")
+
+    def fix_fingers(self):
+        """Periodically refresh finger table entries."""
+        self.fix_finger_index = (self.fix_finger_index + 1) % self.m
+        start = (self.node_id + 2 ** self.fix_finger_index) % (2 ** self.m)
+        self.finger_table[self.fix_finger_index]["start"] = start
+        self.finger_table[self.fix_finger_index]["successor"] = self.find_successor(start)
+
+    def depart(self):
+        print(f"[Node {self.node_id}] Leaving the network...")
+
+        try:
+            if self.successor:
+                print(f"[Node {self.node_id}] Transferring data to successor {self.successor['node_id']}")
+                url = f"http://{self.successor['ip']}:{self.successor['port']}/receive_keys"
+                requests.post(url, json={"data": self.data_store})
+            else:
+                print(f"[Node {self.node_id}] No successor to transfer keys to.")
+
+            if self.predecessor:
+                print(f"[Node {self.node_id}] Updating predecessor's successor to {self.successor['node_id']}")
+                url = f"http://{self.predecessor['ip']}:{self.predecessor['port']}/update_successor"
+                requests.post(url, json={"successor": self.successor})
+            else:
+                print(f"[Node {self.node_id}] No predecessor to update.")
+
+            if self.successor:
+                print(f"[Node {self.node_id}] Updating successor's predecessor to {self.predecessor['node_id']}")
+                url = f"http://{self.successor['ip']}:{self.successor['port']}/update_predecessor"
+                requests.post(url, json={"predecessor": self.predecessor})
+
+            self.successor = None
+            self.predecessor = None
+            self.data_store = {}
+
+            print(f"[Node {self.node_id}] Successfully departed from the network.")
+
+            return True
+
+        except Exception as e:
+            print(f"[Node {self.node_id}] Error during departure: {e}")
+            return False

@@ -19,7 +19,7 @@ services:
           - chord_node_1
     volumes:
       - ./chord_node:/app
-    command: ["python", "-u", "api.py"]
+    command: ["python3", "-u", "api.py"]
 
   node2:
     build:
@@ -39,9 +39,9 @@ services:
           - chord_node_2
     volumes:
       - ./chord_node:/app
-    depends_on:
-      - node1
-    command: ["sh", "-c", "sleep 5 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
+    # depends_on:
+    #   - node1
+    command: ["sh", "-c", "sleep 5 && python3 -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
 
   node3:
     build:
@@ -61,10 +61,10 @@ services:
           - chord_node_3
     volumes:
       - ./chord_node:/app
-    depends_on:
-      - node1
-      - node2
-    command: ["sh", "-c", "sleep 10 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
+    # depends_on:
+    #   - node1
+    #   - node2
+    command: ["sh", "-c", "sleep 10 && python3 -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
   node4:
     build:
       context: ./chord_node
@@ -83,11 +83,35 @@ services:
           - chord_node_4
     volumes:
       - ./chord_node:/app
-    depends_on:
-      - node1
-      - node2
-      - node3
-    command: ["sh", "-c", "sleep 15 && python -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
+    # depends_on:
+    #   - node1
+    #   - node2
+    #   - node3
+    command: ["sh", "-c", "sleep 15 && python3 -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
+
+  node5:
+    build:
+      context: ./chord_node
+    container_name: chord_node_5
+    environment:
+      - NODE_IP=chord_node_5
+      - NODE_PORT=5000
+      - M_BITS=7
+      - DEBUG_MODE=True   # Enable debugging
+    ports:
+      - "5005:5000"
+      - "5682:5678"  # Expose debugger port
+    networks:
+      chord_network:
+        aliases:
+          - chord_node_5
+    volumes:
+      - ./chord_node:/app
+    # depends_on:
+    #   - node1
+    #   - node2
+    #   - node3
+    command: ["sh", "-c", "sleep 15 && python3 -u api.py && curl -X POST -d 'chord_node_1:5000' http://localhost:5000/join"]
 
 networks:
   chord_network:
