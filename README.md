@@ -6,12 +6,21 @@ This project implements a Distributed Hash Table (DHT) based on the [Chord proto
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Design & Architecture](#design--architecture)
-- [Setup & Execution](#setup--execution)
-- [API Endpoints](#api-endpoints)
-- [Results & Demo](#results--demo)
-- [Next Steps](#next-steps)
+- [Distributed Hash Table (DHT) using Chord](#distributed-hash-table-dht-using-chord)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Design \& Architecture](#design--architecture)
+    - [Node Structure](#node-structure)
+    - [Routing \& Storage](#routing--storage)
+    - [Environment \& Tools](#environment--tools)
+  - [Setup \& Execution](#setup--execution)
+    - [Prerequisites](#prerequisites)
+    - [Clone and Build](#clone-and-build)
+    - [Start the Network](#start-the-network)
+    - [Viewing Logs](#viewing-logs)
+  - [API Endpoints](#api-endpoints)
+  - [Results \& Demo](#results--demo)
+  - [Next Steps](#next-steps)
 
 ---
 
@@ -162,6 +171,24 @@ Each node exposes the following endpoints:
    curl http://localhost:5001/lookup/my-key
    ```
 
+8. **Node Join**
+   - **POST** `/join`
+    Body: raw hostname:port.
+   _Example:_
+   ```bash
+   curl -X POST 'http://localhost:5004/join' -d "chord_node_1:5000"
+   ```
+
+9. **Node Depart**
+   - **POST** `/depart`
+    Body: None.
+   _Example:_
+   ```bash
+   curl -X POST 'http://localhost:5004/depart'
+   ```
+
+10. **Visualization**
+    - You can visualize the ring structure and node details by opening `chord_visualization.html` file in your browser.
 ---
 
 ## Results & Demo
@@ -170,18 +197,14 @@ Each node exposes the following endpoints:
   - Nodes join the network using a bootstrap node.
   - Keys are stored and looked up using the correct routing based on the finger table.
   - API endpoints are functional (tested with Postman and cURL).
+  - Periodic stabilization loop to update successor/predecessor pointers and finger tables automatically.
+  - In case of node departure ring structure is intact and keys are redistributed among the nodes.
 
 ---
 
 ## Next Steps
 
-1. **Implement Stabilization:**  
-   Add a periodic stabilization loop to update successor/predecessor pointers and finger tables automatically.
-
-2. **Improve Fault Tolerance:**  
-   Enhance key transfer and handle node removals or failures gracefully.
-
-3. **Performance Analysis:**  
+1. **Performance Analysis:**  
    Measure lookup latency and generate performance graphs to compare with theoretical \(O(log N)\) behavior.
 
 
