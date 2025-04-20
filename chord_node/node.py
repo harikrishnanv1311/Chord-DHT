@@ -85,7 +85,7 @@ class ChordNode:
         
         # Otherwise, find the closest preceding finger and forward the query
         n_prime = self.closest_preceding_finger(key_id)
-        print(f"Closest Preceding finger for {key_id}: {n_prime}")
+        # print(f"Closest Preceding finger for {key_id}: {n_prime}")
         
         # If n_prime is self, return immediate successor
         if n_prime["node_id"] == self.node_id:
@@ -154,7 +154,7 @@ class ChordNode:
             return True
             
         try:
-            print(f"Joining network via {bootstrap_address}")
+            # print(f"Joining network via {bootstrap_address}")
             # Find our successor through the bootstrap node
             url = f"http://{bootstrap_address}/find_successor?key_id={self.node_id}"
             resp = requests.get(url, timeout=300)
@@ -168,7 +168,7 @@ class ChordNode:
                 resp_pred = requests.get(url_pred, timeout=300)
                 if resp_pred.status_code == 200 and resp_pred.json():
                     old_pred = resp_pred.json()
-                    print(f"Old predecessor obtained: {old_pred}")
+                    # print(f"Old predecessor obtained: {old_pred}")
                 else:
                     old_pred = None
                     print("Failed to get old predecessor from successor")
@@ -199,7 +199,7 @@ class ChordNode:
 
     def init_finger_table(self, bootstrap_address):
         """Initialize the finger table using entries from the bootstrap node."""
-        print(f"Initializing finger table via {bootstrap_address}")
+        # print(f"Initializing finger table via {bootstrap_address}")
         
         # Set the first finger's successor to our own successor
         self.finger_table[0]["successor"] = self.successor
@@ -208,10 +208,10 @@ class ChordNode:
             # Get predecessor of our successor
             url = f"http://{self.successor['ip']}:{self.successor['port']}/get_predecessor"
             resp = requests.get(url, timeout=300)
-            print(f"Response returned from init_finger_table() while fetching predecessor of successor {resp}")
+            # print(f"Response returned from init_finger_table() while fetching predecessor of successor {resp}")
             if resp.status_code == 200 and resp.json():
                 self.predecessor = resp.json()
-                print(f"Set predecessor to {self.predecessor}")
+                # print(f"Set predecessor to {self.predecessor}")
             else:
                 print("Failed to get predecessor from successor")
         except Exception as e:
@@ -237,14 +237,14 @@ class ChordNode:
                 except Exception as e:
                     print(f"Error finding successor for finger {i}: {e}")
         
-        print(f"Finger table initialized: {self.finger_table}")
+        # print(f"Finger table initialized: {self.finger_table}")
         
         # Update other nodes that should point to us
         self.update_others()
 
     def update_others(self):
         """Update all nodes whose finger tables should point to us."""
-        print("Updating other nodes' finger tables")
+        # print("Updating other nodes' finger tables")
         
         for i in range(self.m):
             # Find the last node p whose i-th finger might be us
@@ -274,7 +274,7 @@ class ChordNode:
             self.in_interval(s["node_id"], self.node_id, self.finger_table[i]["successor"]["node_id"], inclusive_right=False)):
             
             self.finger_table[i]["successor"] = s
-            print(f"Updated finger table entry {i} to node {s['node_id']}")
+            # print(f"Updated finger table entry {i} to node {s['node_id']}")
             
             # Propagate update to predecessor if needed
             if self.predecessor and self.predecessor["node_id"] != s["node_id"]:
@@ -295,10 +295,10 @@ class ChordNode:
             data = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
             resp = requests.post(url, json=data, timeout=300)
             if resp.status_code == 200:
-                print(f"Notified successor {self.successor['node_id']}")
+                # print(f"Notified successor {self.successor['node_id']}")
                 return True
             else:
-                print(f"Failed to notify successor: {resp.status_code}")
+                # print(f"Failed to notify successor: {resp.status_code}")
                 return False
         except Exception as e:
             print(f"Error notifying successor: {e}")   
@@ -310,7 +310,7 @@ class ChordNode:
             self.in_interval(node["node_id"], self.predecessor["node_id"], self.node_id, inclusive_right=False)):
             
             self.predecessor = node
-            print(f"Updated predecessor to node {node['node_id']}")
+            # print(f"Updated predecessor to node {node['node_id']}")
             return True
         return False
 
@@ -324,13 +324,13 @@ class ChordNode:
             data = {"node_id": self.node_id, "ip": self.ip, "port": self.port}
             resp = requests.post(url, json=data, timeout=300)
             if resp.status_code == 200:
-                print(f"Predecessor {self.predecessor['node_id']} updated its successor to {self.node_id}")
+                # print(f"Predecessor {self.predecessor['node_id']} updated its successor to {self.node_id}")
                 return True
             else:
-                print(f"Failed to update predecessor's successor: {resp.status_code}")
+                # print(f"Failed to update predecessor's successor: {resp.status_code}")
                 return False
         except Exception as e:
-            print(f"Error updating predecessor's successor: {e}")
+            # print(f"Error updating predecessor's successor: {e}")
             return False
 
       
@@ -351,13 +351,13 @@ class ChordNode:
                 keys = resp.json().get("keys", {})
                 for k, v in keys.items():
                     self.store_data(k, v)
-                print(f"Received {len(keys)} keys from successor")
+                # print(f"Received {len(keys)} keys from successor")
                 return True
             else:
-                print(f"Failed to transfer keys: {resp.status_code}")
+                # print(f"Failed to transfer keys: {resp.status_code}")
                 return False
         except Exception as e:
-            print(f"Error transferring keys: {e}")
+            # print(f"Error transferring keys: {e}")
             return False
 
     def transfer_keys_to_predecessor(self, new_pred_id, lower_bound=None):
@@ -378,7 +378,7 @@ class ChordNode:
         for k in keys_to_remove:
             del self.data_store[k]
             
-        print(f"Transferring {len(keys_to_transfer)} keys to predecessor using lower bound {lower_bound}")
+        # print(f"Transferring {len(keys_to_transfer)} keys to predecessor using lower bound {lower_bound}")
         return keys_to_transfer
 
     def as_dict(self):
@@ -433,7 +433,7 @@ class ChordNode:
             self.predecessor = None
             self.data_store = {}
 
-            print(f"[Node {self.node_id}] Successfully departed from the network.")
+            # print(f"[Node {self.node_id}] Successfully departed from the network.")
 
             return True
 

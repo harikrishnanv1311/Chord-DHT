@@ -7,6 +7,10 @@ import time
 import debugpy
 from node import ChordNode
 from flask_cors import CORS
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 
 app = Flask(__name__)
 CORS(app)
@@ -322,7 +326,7 @@ def get_network_state():
     """Return the current state of all known nodes in the network."""
     visited = set([node.node_id])
     nodes = [get_node_state()]
-    print(nodes)
+    # print(nodes)
     current = node.successor
     max_nodes = 20
     count = 0
@@ -344,8 +348,8 @@ def get_network_state():
             
         count += 1
     res = jsonify({"nodes": nodes})
-    print("res")
-    print(res.get_data(as_text=True))
+    # print("res")
+    # print(res.get_data(as_text=True))
     return res
 
 if __name__ == "__main__":
