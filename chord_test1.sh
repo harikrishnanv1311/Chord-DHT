@@ -76,3 +76,32 @@ done
 
 echo ""
 echo "✅ Test script completed."
+
+# 6. Depart a node that holds a key
+echo ""
+echo "🚪 Simulating node departure (node holding key)..."
+
+# Let's assume key1 is at port 5002
+echo "➡️ Checking initial key location for key1..."
+initial_holder=$(curl -s http://localhost:5002/lookup/key1)
+echo "Initial holder of key1 is node: $initial_holder"
+
+# Trigger node departure
+echo "🔌 Making node1 (port 5001) leave the network..."
+curl -s -X POST http://localhost:5001/depart
+sleep 3
+
+# Try looking up key1 from a different node (e.g., node3)
+echo "🔍 Attempting to lookup key1 from node3 after departure..."
+curl -s http://localhost:5003/lookup/key1
+sleep 3
+
+# Check data stores across nodes to verify reassignment
+echo ""
+echo "📁 Verifying key reallocation across nodes..."
+for port in 5002 5003 5004 5005
+do
+    echo "Node at port $port:"
+    curl -s http://localhost:$port/data_store
+    echo ""
+done
