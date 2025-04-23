@@ -1,0 +1,1124 @@
+version: '3'
+services:
+  node1:
+    build:
+      context: ./chord_node
+    container_name: chord_node_1
+    environment:
+      - NODE_IP=chord_node_1
+      - NODE_PORT=5000
+      - M_BITS=10
+      - DEBUG_MODE=True   # Enable debugging
+    ports:
+      - "5001:5000"
+      - "5677:5678"  # Expose debugger port
+    networks:
+      chord_network:
+        aliases:
+          - chord_node_1
+    volumes:
+      - ./chord_node:/app
+    command: ["python3", "-u", "api.py"]
+  # node_xaji0y:
+  #   build:
+  #     context: ./chord_node
+  #   container_name: chord_node_xaji0y
+  #   environment:
+  #   - NODE_IP=chord_node_xaji0y
+  #   - NODE_PORT=5000
+  #   - M_BITS=10
+  #   - DEBUG_MODE=True
+  #   ports:
+  #   - 5001:5000
+  #   - 5678:5678
+  #   networks:
+  #     chord_network:
+  #       aliases:
+  #       - chord_node_xaji0y
+  #   volumes:
+  #   - ./chord_node:/app
+  #   command:
+  #   - sh
+  #   - -c
+  #   - sleep 6 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_6dpbhs:
+    build:
+      context: ./chord_node
+    container_name: chord_node_6dpbhs
+    environment:
+    - NODE_IP=chord_node_6dpbhs
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5002:5000
+    - 5679:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_6dpbhs
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 7 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ahxthv:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ahxthv
+    environment:
+    - NODE_IP=chord_node_ahxthv
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5003:5000
+    - 5680:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ahxthv
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 8 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_3a3zmf:
+    build:
+      context: ./chord_node
+    container_name: chord_node_3a3zmf
+    environment:
+    - NODE_IP=chord_node_3a3zmf
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5004:5000
+    - 5681:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_3a3zmf
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 9 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_8mdd4v:
+    build:
+      context: ./chord_node
+    container_name: chord_node_8mdd4v
+    environment:
+    - NODE_IP=chord_node_8mdd4v
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5005:5000
+    - 5682:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_8mdd4v
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 10 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_30t9nt:
+    build:
+      context: ./chord_node
+    container_name: chord_node_30t9nt
+    environment:
+    - NODE_IP=chord_node_30t9nt
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5006:5000
+    - 5683:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_30t9nt
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 11 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_3w5uzb:
+    build:
+      context: ./chord_node
+    container_name: chord_node_3w5uzb
+    environment:
+    - NODE_IP=chord_node_3w5uzb
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5007:5000
+    - 5684:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_3w5uzb
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 12 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ikcidk:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ikcidk
+    environment:
+    - NODE_IP=chord_node_ikcidk
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5008:5000
+    - 5685:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ikcidk
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 13 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_wnnhj7:
+    build:
+      context: ./chord_node
+    container_name: chord_node_wnnhj7
+    environment:
+    - NODE_IP=chord_node_wnnhj7
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5009:5000
+    - 5686:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_wnnhj7
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 14 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_xvg0fn:
+    build:
+      context: ./chord_node
+    container_name: chord_node_xvg0fn
+    environment:
+    - NODE_IP=chord_node_xvg0fn
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5010:5000
+    - 5687:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_xvg0fn
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 15 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_9xuy41:
+    build:
+      context: ./chord_node
+    container_name: chord_node_9xuy41
+    environment:
+    - NODE_IP=chord_node_9xuy41
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5011:5000
+    - 5688:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_9xuy41
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 16 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ibljh7:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ibljh7
+    environment:
+    - NODE_IP=chord_node_ibljh7
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5012:5000
+    - 5689:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ibljh7
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 17 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_5lxo6q:
+    build:
+      context: ./chord_node
+    container_name: chord_node_5lxo6q
+    environment:
+    - NODE_IP=chord_node_5lxo6q
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5013:5000
+    - 5690:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_5lxo6q
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 18 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_jiujv6:
+    build:
+      context: ./chord_node
+    container_name: chord_node_jiujv6
+    environment:
+    - NODE_IP=chord_node_jiujv6
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5014:5000
+    - 5691:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_jiujv6
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 19 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_oh9sdb:
+    build:
+      context: ./chord_node
+    container_name: chord_node_oh9sdb
+    environment:
+    - NODE_IP=chord_node_oh9sdb
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5015:5000
+    - 5692:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_oh9sdb
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 20 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_dw2pcn:
+    build:
+      context: ./chord_node
+    container_name: chord_node_dw2pcn
+    environment:
+    - NODE_IP=chord_node_dw2pcn
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5016:5000
+    - 5693:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_dw2pcn
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 21 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_9t84az:
+    build:
+      context: ./chord_node
+    container_name: chord_node_9t84az
+    environment:
+    - NODE_IP=chord_node_9t84az
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5017:5000
+    - 5694:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_9t84az
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 22 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ytjxep:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ytjxep
+    environment:
+    - NODE_IP=chord_node_ytjxep
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5018:5000
+    - 5695:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ytjxep
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 23 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_q85jsg:
+    build:
+      context: ./chord_node
+    container_name: chord_node_q85jsg
+    environment:
+    - NODE_IP=chord_node_q85jsg
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5019:5000
+    - 5696:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_q85jsg
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 24 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_65kxvf:
+    build:
+      context: ./chord_node
+    container_name: chord_node_65kxvf
+    environment:
+    - NODE_IP=chord_node_65kxvf
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5020:5000
+    - 5697:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_65kxvf
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 25 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_1t2tal:
+    build:
+      context: ./chord_node
+    container_name: chord_node_1t2tal
+    environment:
+    - NODE_IP=chord_node_1t2tal
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5021:5000
+    - 5698:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_1t2tal
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 26 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_a753lc:
+    build:
+      context: ./chord_node
+    container_name: chord_node_a753lc
+    environment:
+    - NODE_IP=chord_node_a753lc
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5022:5000
+    - 5699:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_a753lc
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 27 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_58drc1:
+    build:
+      context: ./chord_node
+    container_name: chord_node_58drc1
+    environment:
+    - NODE_IP=chord_node_58drc1
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5023:5000
+    - 5700:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_58drc1
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 28 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_1ertj5:
+    build:
+      context: ./chord_node
+    container_name: chord_node_1ertj5
+    environment:
+    - NODE_IP=chord_node_1ertj5
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5024:5000
+    - 5701:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_1ertj5
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 29 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_pht0hl:
+    build:
+      context: ./chord_node
+    container_name: chord_node_pht0hl
+    environment:
+    - NODE_IP=chord_node_pht0hl
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5025:5000
+    - 5702:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_pht0hl
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 30 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_9xpsei:
+    build:
+      context: ./chord_node
+    container_name: chord_node_9xpsei
+    environment:
+    - NODE_IP=chord_node_9xpsei
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5026:5000
+    - 5703:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_9xpsei
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 31 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_mvihcw:
+    build:
+      context: ./chord_node
+    container_name: chord_node_mvihcw
+    environment:
+    - NODE_IP=chord_node_mvihcw
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5027:5000
+    - 5704:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_mvihcw
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 32 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_i64ciy:
+    build:
+      context: ./chord_node
+    container_name: chord_node_i64ciy
+    environment:
+    - NODE_IP=chord_node_i64ciy
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5028:5000
+    - 5705:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_i64ciy
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 33 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_he7ur2:
+    build:
+      context: ./chord_node
+    container_name: chord_node_he7ur2
+    environment:
+    - NODE_IP=chord_node_he7ur2
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5029:5000
+    - 5706:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_he7ur2
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 34 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_3gdppq:
+    build:
+      context: ./chord_node
+    container_name: chord_node_3gdppq
+    environment:
+    - NODE_IP=chord_node_3gdppq
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5030:5000
+    - 5707:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_3gdppq
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 35 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_0y9dom:
+    build:
+      context: ./chord_node
+    container_name: chord_node_0y9dom
+    environment:
+    - NODE_IP=chord_node_0y9dom
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5031:5000
+    - 5708:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_0y9dom
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 36 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_5igqpk:
+    build:
+      context: ./chord_node
+    container_name: chord_node_5igqpk
+    environment:
+    - NODE_IP=chord_node_5igqpk
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5032:5000
+    - 5709:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_5igqpk
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 37 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_i7p5tb:
+    build:
+      context: ./chord_node
+    container_name: chord_node_i7p5tb
+    environment:
+    - NODE_IP=chord_node_i7p5tb
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5033:5000
+    - 5710:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_i7p5tb
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 38 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_94874f:
+    build:
+      context: ./chord_node
+    container_name: chord_node_94874f
+    environment:
+    - NODE_IP=chord_node_94874f
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5034:5000
+    - 5711:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_94874f
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 39 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_rhocn9:
+    build:
+      context: ./chord_node
+    container_name: chord_node_rhocn9
+    environment:
+    - NODE_IP=chord_node_rhocn9
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5035:5000
+    - 5712:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_rhocn9
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 40 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_j2qp89:
+    build:
+      context: ./chord_node
+    container_name: chord_node_j2qp89
+    environment:
+    - NODE_IP=chord_node_j2qp89
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5036:5000
+    - 5713:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_j2qp89
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 41 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_uzfk8u:
+    build:
+      context: ./chord_node
+    container_name: chord_node_uzfk8u
+    environment:
+    - NODE_IP=chord_node_uzfk8u
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5037:5000
+    - 5714:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_uzfk8u
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 42 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_t0cvs4:
+    build:
+      context: ./chord_node
+    container_name: chord_node_t0cvs4
+    environment:
+    - NODE_IP=chord_node_t0cvs4
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5038:5000
+    - 5715:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_t0cvs4
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 43 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_f8cgvy:
+    build:
+      context: ./chord_node
+    container_name: chord_node_f8cgvy
+    environment:
+    - NODE_IP=chord_node_f8cgvy
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5039:5000
+    - 5716:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_f8cgvy
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 44 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ie6ivw:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ie6ivw
+    environment:
+    - NODE_IP=chord_node_ie6ivw
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5040:5000
+    - 5717:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ie6ivw
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 45 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_pvs7hz:
+    build:
+      context: ./chord_node
+    container_name: chord_node_pvs7hz
+    environment:
+    - NODE_IP=chord_node_pvs7hz
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5041:5000
+    - 5718:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_pvs7hz
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 46 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_ioykl1:
+    build:
+      context: ./chord_node
+    container_name: chord_node_ioykl1
+    environment:
+    - NODE_IP=chord_node_ioykl1
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5042:5000
+    - 5719:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_ioykl1
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 47 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_cq99ch:
+    build:
+      context: ./chord_node
+    container_name: chord_node_cq99ch
+    environment:
+    - NODE_IP=chord_node_cq99ch
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5043:5000
+    - 5720:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_cq99ch
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 48 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_j755nf:
+    build:
+      context: ./chord_node
+    container_name: chord_node_j755nf
+    environment:
+    - NODE_IP=chord_node_j755nf
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5044:5000
+    - 5721:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_j755nf
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 49 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_4zw9xa:
+    build:
+      context: ./chord_node
+    container_name: chord_node_4zw9xa
+    environment:
+    - NODE_IP=chord_node_4zw9xa
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5045:5000
+    - 5722:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_4zw9xa
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 50 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_3kx7ee:
+    build:
+      context: ./chord_node
+    container_name: chord_node_3kx7ee
+    environment:
+    - NODE_IP=chord_node_3kx7ee
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5046:5000
+    - 5723:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_3kx7ee
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 51 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_dtjvzh:
+    build:
+      context: ./chord_node
+    container_name: chord_node_dtjvzh
+    environment:
+    - NODE_IP=chord_node_dtjvzh
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5047:5000
+    - 5724:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_dtjvzh
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 52 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_wjr64d:
+    build:
+      context: ./chord_node
+    container_name: chord_node_wjr64d
+    environment:
+    - NODE_IP=chord_node_wjr64d
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5048:5000
+    - 5725:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_wjr64d
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 53 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_pja1wj:
+    build:
+      context: ./chord_node
+    container_name: chord_node_pja1wj
+    environment:
+    - NODE_IP=chord_node_pja1wj
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5049:5000
+    - 5726:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_pja1wj
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 54 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+  node_0tpac5:
+    build:
+      context: ./chord_node
+    container_name: chord_node_0tpac5
+    environment:
+    - NODE_IP=chord_node_0tpac5
+    - NODE_PORT=5000
+    - M_BITS=10
+    - DEBUG_MODE=True
+    ports:
+    - 5050:5000
+    - 5727:5678
+    networks:
+      chord_network:
+        aliases:
+        - chord_node_0tpac5
+    volumes:
+    - ./chord_node:/app
+    command:
+    - sh
+    - -c
+    - sleep 55 && python3 -u api.py && curl -X POST -d 'chord_node_xaji0y:5000' http://localhost:5000/join
+networks:
+  chord_network:
+    driver: bridge

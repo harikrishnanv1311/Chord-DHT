@@ -71,6 +71,27 @@
         .highlighted-row {
             background-color: #FED7D7;
         }
+        .key-distribution {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .key-count-bar {
+            fill: #4299E1;
+            transition: fill 0.3s ease;
+        }
+        .key-count-bar:hover {
+            fill: #3182CE;
+        }
+        .key-count-bar.selected {
+            fill: #E53E3E;
+        }
+        .bar-chart-container {
+            width: 100%;
+            height: 250px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +113,11 @@
         
         <div class="chord-ring" id="chordRing"></div>
         
+        <div class="key-distribution">
+            <h2>Key Distribution</h2>
+            <div class="bar-chart-container" id="keyDistribution"></div>
+        </div>
+        
         <div class="node-details" id="nodeDetails">
             <h3>Select a node to see details</h3>
         </div>
@@ -109,13 +135,45 @@
         let highlightedFinger = null;
         let maxId = Math.pow(2, 160); // Default for SHA-1
         
-        // Set up SVG
+        // Set up SVG for chord ring
         const svg = d3.select("#chordRing")
             .append("svg")
             .attr("width", width)
             .attr("height", height)
             .append("g")
             .attr("transform", `translate(${width/2}, ${height/2})`);
+        
+        // Set up SVG for bar chart
+        const barSvg = d3.select("#keyDistribution")
+            .append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("viewBox", "0 0 800 200")
+            .attr("preserveAspectRatio", "xMidYMid meet");
+            
+        const barChart = barSvg.append("g")
+            .attr("transform", "translate(40, 20)");
+            
+        // Add x and y axes groups
+        barChart.append("g")
+            .attr("class", "x-axis")
+            .attr("transform", "translate(0, 150)");
+            
+        barChart.append("g")
+            .attr("class", "y-axis");
+            
+        // Add axis labels
+        barSvg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(15, 100) rotate(-90)")
+            .attr("font-size", "12px")
+            .text("Number of Keys");
+            
+        barSvg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "translate(400, 200)")
+            .attr("font-size", "12px")
+            .text("Node ID");
         
         // Add a circle for the Chord ring
         svg.append("circle")
@@ -199,6 +257,7 @@
             selectedNode = d;
             updateNodeDetails();
             updateVisualization();
+            updateBarChart();
         }
         
         // Update the visualization
@@ -207,7 +266,7 @@
             svg.selectAll(".node").remove();
             svg.selectAll(".link").remove();
             svg.selectAll(".finger").remove();
-            
+            console.log("ASASASAS22 Sorted nodes:", nodes.map(n => ({ id: n.node_id, count: n.data_count })));
             // Draw successor links
             nodes.forEach(node => {
                 const startPos = getNodePosition(node.node_id);
@@ -263,6 +322,7 @@
             });
             
             // Create individual node elements (cannot use data binding here because of selection issues)
+            console.log("ASASASAS1 Sorted nodes:", nodes.map(n => ({ id: n.node_id, count: n.data_count })));
             nodes.forEach(node => {
                 const pos = getNodePosition(node.node_id);
                 
@@ -291,7 +351,90 @@
                     .attr("text-anchor", "middle")
                     .attr("font-size", "12")
                     .text(node.node_id);
+                    
+                // Add key count label if available
+                if (node.data_count !== undefined) {
+                    nodeGroup.append("text")
+                        .attr("dx", 0)
+                        .attr("dy", 25)
+                        .attr("text-anchor", "middle")
+                        .attr("font-size", "10")
+                        .attr("fill", "#4A5568")
+                        .text(`${node.data_count} keys`);
+                }
             });
+        }
+        
+        // Update key distribution bar chart
+        function updateBarChart() {
+            if (!nodes.length) return;
+            const sortedNodes = [...nodes].sort((a, b) => a.node_id - b.node_id);
+            
+            // Ensure each node has a data_count (defaulting to 0 if undefined)
+            sortedNodes.forEach(node => {
+                if (node.data_count === undefined) {
+                    node.data_count = 0;
+                }
+            });
+            
+            const xScale = d3.scaleBand()
+                .domain(sortedNodes.map(d => d.node_id))
+                .range([0, 720])
+                .padding(0.2);
+            
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(sortedNodes, d => d.data_count) || 10])
+                .nice()
+                .range([150, 0]);
+            
+            // Axes
+            barChart.select(".x-axis")
+                .call(d3.axisBottom(xScale).tickFormat(d => d > 1000 ? d.toExponential(1) : d));
+            
+            barChart.select(".y-axis")
+                .call(d3.axisLeft(yScale));
+            
+            // Bars
+            const bars = barChart.selectAll(".key-count-bar")
+                .data(sortedNodes, d => d.node_id);
+            
+            bars.exit().remove();
+            
+            const barsEnter = bars.enter()
+                .append("rect")
+                .attr("class", "key-count-bar")
+                .on("click", function(event, d) {
+                    selectNode(d);
+                });
+            
+            barsEnter.merge(bars)
+                .transition()
+                .duration(500)
+                .attr("x", d => xScale(d.node_id))
+                .attr("y", d => yScale(d.data_count))
+                .attr("width", xScale.bandwidth())
+                .attr("height", d => 150 - yScale(d.data_count))
+                .attr("fill", d => selectedNode && d.node_id === selectedNode.node_id ? "#ffcc00" : "#69b3a2");
+            
+            // Labels
+            const labels = barChart.selectAll(".bar-label")
+                .data(sortedNodes, d => d.node_id);
+            
+
+            labels.exit().remove();
+            
+            const labelsEnter = labels.enter()
+                .append("text")
+                .attr("class", "bar-label")
+                .attr("text-anchor", "middle")
+                .attr("font-size", "10");
+            
+            labelsEnter.merge(labels)
+                .transition()
+                .duration(500)
+                .attr("x", d => xScale(d.node_id) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.data_count) - 5)
+                .text(d => d.data_count);
         }
         
         // Update node details panel
@@ -309,7 +452,7 @@
                     <p><strong>Port:</strong> ${selectedNode.port}</p>
                     <p><strong>Successor:</strong> ${selectedNode.successor.node_id}</p>
                     <p><strong>Predecessor:</strong> ${selectedNode.predecessor ? selectedNode.predecessor.node_id : "None"}</p>
-                    <p><strong>Keys Stored:</strong> ${selectedNode.data_count || 0}</p>
+                    <p><strong>Keys Stored:</strong> ${selectedNode.data_count}</p>
                 </div>
                 
                 <h4>Finger Table</h4>
@@ -398,7 +541,7 @@
             }, 5000);
         }
         
-        // Fetch network state from a node
+        // Fetch network state and node data from a node
         async function fetchNetworkState() {
             const bootstrapNode = document.getElementById("bootstrapNode").value;
             
@@ -420,18 +563,25 @@
                 if (response.ok) {
                     const data = await response.json();
                     nodes = data.nodes;
-                    
+                    console.log("ASASASAS Sorted nodes:", nodes.map(n => ({ id: n.node_id, count: n.data_count })));
                     // Get the maximum ID to determine the scale
                     if (nodes.length > 0 && nodes[0].m) {
                         maxId = Math.pow(2, nodes[0].m);
                     }
                     
-                    // Clear selection
-                    selectedNode = null;
+                    // Fetch key counts for all nodes using the node_info API
+                    // await fetchAllNodeInfo();
                     
+                    // Clear selection if the previously selected node is no longer present
+                    if (selectedNode && !nodes.find(n => n.node_id === selectedNode.node_id)) {
+                        selectedNode = null;
+                    }
+                    
+                    console.log("ASASASAS33 Sorted nodes:", nodes.map(n => ({ id: n.node_id, count: n.data_count })));
                     // Redraw everything
                     drawIdMarkers();
                     updateVisualization();
+                    updateBarChart();
                     updateNodeDetails();
                     
                     showStatus(`Successfully connected to ${bootstrapNode}`);
@@ -442,8 +592,136 @@
                 console.error("Error fetching network state:", error);
                 let errorMessage = error.name === "AbortError" ? 
                     "Connection timed out" : `Error: ${error.message}`;
+                    
+                // For demonstration, generate random data if fetch fails
+                if (nodes.length === 0) {
+                    drawIdMarkers();
+                    updateVisualization();
+                    updateBarChart();
+                }
+                
                 showStatus(`Error connecting to node: ${errorMessage}`, true);
             }
+        }
+        
+        // Fetch node info for all nodes to get accurate key counts
+        async function fetchAllNodeInfo() {
+            // Create an array of promises for all node info requests
+            const nodeInfoPromises = nodes.map(async (node) => {
+                try {
+                    const bootstrapNode = document.getElementById("bootstrapNode").value;
+                    const response = await fetch(`http://${bootstrapNode}/node_info`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        // Short timeout since we're making multiple requests
+                        signal: AbortSignal.timeout(3000)
+                    });
+                    
+                    if (response.ok) {
+                        const nodeInfo = await response.json();
+                        node.data_count = nodeInfo.data_count
+                        // Update the node with accurate key count
+                        
+                        
+                        console.log(`Node ${node.node_id} has ${node.data_count} keys`);
+                    } else {
+                        console.warn(`Failed to fetch node info for ${node.node_id}: ${response.statusText}`);
+                    }
+                } catch (error) {
+                    console.warn(`Error fetching node info for ${node.node_id}:`, error);
+                }
+                
+                return node;
+            });
+            
+            // Wait for all promises to settle (both fulfilled and rejected)
+            await Promise.allSettled(nodeInfoPromises);
+            
+            // Fallback for nodes without data_count
+            nodes.forEach(node => {
+                if (node.data_count === undefined) {
+                    console.log(`Using fallback data_count for node ${node.node_id}`);
+                    node.data_count = 0;
+                }
+            });
+        }
+        
+        // Generate demo data if the API doesn't exist
+        function generateDemoData() {
+            const m = 7; // Using smaller m for demonstration
+            maxId = Math.pow(2, m);
+            
+            nodes = [];
+            const nodeCount = 8;
+            
+            for (let i = 0; i < nodeCount; i++) {
+                const nodeId = Math.floor(Math.random() * maxId);
+                
+                const node = {
+                    node_id: nodeId,
+                    ip: "127.0.0.1",
+                    port: 5000 + i,
+                    data_count: Math.floor(Math.random() * 30),
+                    m: m,
+                    finger_table: [],
+                    successor: null,
+                    predecessor: null
+                };
+                
+                nodes.push(node);
+            }
+            
+            // Sort by node_id
+            nodes.sort((a, b) => a.node_id - b.node_id);
+            
+            // Set successors and predecessors
+            for (let i = 0; i < nodes.length; i++) {
+                const nextIndex = (i + 1) % nodes.length;
+                const prevIndex = (i - 1 + nodes.length) % nodes.length;
+                
+                nodes[i].successor = {
+                    node_id: nodes[nextIndex].node_id,
+                    ip: nodes[nextIndex].ip,
+                    port: nodes[nextIndex].port
+                };
+                
+                nodes[i].predecessor = {
+                    node_id: nodes[prevIndex].node_id,
+                    ip: nodes[prevIndex].ip,
+                    port: nodes[prevIndex].port
+                };
+                
+                // Generate finger table entries
+                for (let j = 0; j < m; j++) {
+                    const start = (nodes[i].node_id + Math.pow(2, j)) % maxId;
+                    
+                    // Find successor for this finger
+                    let successorNode = null;
+                    for (let k = 0; k < nodes.length; k++) {
+                        if (nodes[k].node_id >= start || k === 0) {
+                            successorNode = nodes[k];
+                            break;
+                        }
+                    }
+                    
+                    if (!successorNode) {
+                        successorNode = nodes[0];
+                    }
+                    
+                    nodes[i].finger_table.push({
+                        start: start,
+                        successor: {
+                            node_id: successorNode.node_id,
+                            ip: successorNode.ip,
+                            port: successorNode.port
+                        }
+                    });
+                }
+            }
+            
+            console.log("Generated demo data:", nodes);
         }
         
         // Event listeners

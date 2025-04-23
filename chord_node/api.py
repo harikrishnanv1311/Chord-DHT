@@ -20,16 +20,10 @@ DEBUG_MODE = os.getenv("DEBUG_MODE", "False").lower() == "true"
 if DEBUG_MODE:
     debugpy.listen(("0.0.0.0", 5678))  # Debugger listens on port 5678
     print("⚡ Waiting for debugger to attach...")
-    # debugpy.wait_for_client()  # Blocks execution until debugger is attached
 
-# Get environment variables
 NODE_IP = os.getenv("NODE_IP", "0.0.0.0")
 NODE_PORT = int(os.getenv("NODE_PORT", "5000"))
-M_BITS = int(os.getenv("M_BITS", "7"))  # 7-bit IDs for simulation
-
-# Initialize the Chord node
-# node = ChordNode(ip=NODE_IP, port=NODE_PORT, m=M_BITS)
-
+M_BITS = int(os.getenv("M_BITS", "10"))  # 7-bit IDs for simulation
 
 def stabilization_loop(node):
     while True:
@@ -38,7 +32,7 @@ def stabilization_loop(node):
             node.fix_fingers()
         except Exception as e:
             print(f"[Background Thread Error] {e}")
-        time.sleep(5)  # run every 5 seconds
+        time.sleep(2)  # run every 5 seconds
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -74,21 +68,6 @@ def get_node_info():
         "data_count": len(node.data_store),
         "m": node.m
     })
-    # return jsonify({
-    #     "node_id": node.node_id,
-    #     "ip": node.ip,
-    #     "port": node.port,
-    #     "successor": node.successor,
-    #     "predecessor": node.predecessor,
-    #     "finger_table": [
-    #         {   
-    #             "start": entry["start"], 
-    #             "successor_id": entry["successor"]["node_id"]
-    #         } for entry in node.finger_table
-    #     ],
-    #     # "data_count": len(node.data_store),
-    #     "m": node.m
-    # })
 
 @app.route('/successor', methods=['GET'])
 def get_successor():
@@ -131,7 +110,7 @@ def set_successor():
     # You might add additional checks to verify that new_successor
     # falls into the correct interval. For minimal change, we simply update.
     node.successor = new_successor
-    print(f"set_successor: Updated successor to {new_successor['node_id']}")
+    # print(f"set_successor: Updated successor to {new_successor['node_id']}")
     return jsonify({"message": f"Successor updated to {new_successor['node_id']}"}), 200
 
 
@@ -157,8 +136,6 @@ def store_key(key):
     # Use a query parameter "forwarded" with a default value of "0"
     forwarded = request.args.get("forwarded", "0") == "1"
     key_id = node.hash_key(key)
-    print(f"key:{key} hash:{key_id}")
-    # If this is a forwarded request (or this node is responsible), store locally.
     if forwarded or node.is_responsible(key_id):
         node.store_data(key, value)
         return jsonify({
@@ -168,16 +145,12 @@ def store_key(key):
             "path": [node.node_id]
         })
     
-    # Otherwise, find the node responsible for this key
     successor = node.find_successor(key_id)
     try:
-        # When forwarding, append the query parameter so the next node knows
-        # that this is an internally forwarded request.
         url = f"http://{successor['ip']}:{successor['port']}/store/{key}?forwarded=1"
         resp = requests.post(url, data=value, timeout=300)
         resp_data = resp.json()
         
-        # Append our node_id to the routing path for traceability.
         if "path" in resp_data:
             resp_data["path"].append(node.node_id)
         else:
@@ -193,7 +166,6 @@ def store_key(key):
 
 @app.route('/lookup/<key>', methods=['GET'])
 def lookup_key(key):
-    # Use the query parameter "forwarded" with a default of "0"
     forwarded = request.args.get("forwarded", "0") == "1"
     key_id = node.hash_key(key)
     
@@ -215,7 +187,6 @@ def lookup_key(key):
             "path": [node.node_id]
         })
     
-    # Otherwise, forward the lookup request to the responsible node.
     successor = node.find_successor(key_id)
     try:
         url = f"http://{successor['ip']}:{successor['port']}/lookup/{key}?forwarded=1"
@@ -239,7 +210,6 @@ def lookup_key(key):
 def join():
     bootstrap_address = request.data.decode().strip()
     if not bootstrap_address:
-        # First node in the network
         result = node.join()
     else:
         result = node.join(bootstrap_address)
@@ -306,6 +276,7 @@ def get_node_state():
     """Return the current state of this node for visualization purposes."""
     node_state = {
         "node_id": node.node_id,
+        "data_count":len(node.data_store),
         "ip": node.ip,
         "port": node.port,
         "successor": node.successor,
@@ -320,15 +291,13 @@ def get_node_state():
     }
     return node_state
 
-# Also add an endpoint to get state of all known nodes
 @app.route('/network_state', methods=['GET'])
 def get_network_state():
     """Return the current state of all known nodes in the network."""
     visited = set([node.node_id])
     nodes = [get_node_state()]
-    # print(nodes)
     current = node.successor
-    max_nodes = 20
+    max_nodes = 100
     count = 0
     
     while current["node_id"] != node.node_id and count < max_nodes:
@@ -348,8 +317,6 @@ def get_network_state():
             
         count += 1
     res = jsonify({"nodes": nodes})
-    # print("res")
-    # print(res.get_data(as_text=True))
     return res
 
 if __name__ == "__main__":
