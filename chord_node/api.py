@@ -25,6 +25,7 @@ NODE_IP = os.getenv("NODE_IP", "0.0.0.0")
 NODE_PORT = int(os.getenv("NODE_PORT", "5000"))
 M_BITS = int(os.getenv("M_BITS", "10"))  # 7-bit IDs for simulation
 
+#AUTHOR: Apurv Choudhari 
 def stabilization_loop(node):
     while True:
         try:
@@ -43,6 +44,7 @@ def health_check():
         "predecessor": node.predecessor["node_id"] if node.predecessor else None
     })
 
+#AUTHOR: Apurv Choudhari 
 @app.route('/node_info', methods=['GET'])
 def get_node_info():
     return jsonify({
@@ -229,6 +231,7 @@ def join():
             "node_id": node.node_id
         }), 500
 
+#AUTHOR: Apurv Choudhari 
 @app.route("/depart", methods=["POST"])
 def depart_node():
     success = node.depart()
@@ -237,18 +240,21 @@ def depart_node():
     else:
         return jsonify({"status": "error", "message": "Node departure failed."}), 500
 
+#AUTHOR: Apurv Choudhari 
 @app.route("/update_successor", methods=["POST"])
 def update_successor():
     data = request.get_json()
     node.successor = data.get("successor")
     return jsonify({"status": "success"}), 200
 
+#AUTHOR: Apurv Choudhari 
 @app.route("/update_predecessor", methods=["POST"])
 def update_predecessor():
     data = request.get_json()
     node.predecessor = data.get("predecessor")
     return jsonify({"status": "success"}), 200
 
+#AUTHOR: Apurv Choudhari 
 @app.route("/receive_keys", methods=["POST"])
 def receive_keys():
     data = request.get_json()
@@ -272,6 +278,7 @@ def get_data_store():
         "data": node.data_store
     })
 
+#AUTHOR: Apurv Choudhari 
 def get_node_state():
     """Return the current state of this node for visualization purposes."""
     node_state = {
@@ -291,6 +298,7 @@ def get_node_state():
     }
     return node_state
 
+#AUTHOR: Apurv Choudhari 
 @app.route('/network_state', methods=['GET'])
 def get_network_state():
     """Return the current state of all known nodes in the network."""

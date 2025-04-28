@@ -359,9 +359,11 @@ class ChordNode:
             
         return keys_to_transfer
 
+#AUTHOR: Apurv Choudhari 
     def as_dict(self):
         return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
 
+#AUTHOR: Apurv Choudhari 
     def stabilize(self):
         """Verify your immediate successor and tell it about yourself."""
         try:
@@ -378,6 +380,7 @@ class ChordNode:
         except requests.RequestException:
             print(f"[{self.node_id}] Could not contact successor {self.successor['node_id']}, keeping current")
 
+#AUTHOR: Apurv Choudhari 
     def fix_fingers(self):
         """Periodically refresh finger table entries."""
         self.fix_finger_index = (self.fix_finger_index + 1) % self.m
@@ -385,6 +388,7 @@ class ChordNode:
         self.finger_table[self.fix_finger_index]["start"] = start
         self.finger_table[self.fix_finger_index]["successor"] = self.find_successor(start)
 
+#AUTHOR: Apurv Choudhari 
     def depart(self):
 
         try:
