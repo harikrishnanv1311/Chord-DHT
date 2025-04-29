@@ -153,6 +153,7 @@ class ChordNode:
                 
         return n_prime
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def join(self, bootstrap_address=None):
         """Join the Chord ring using a bootstrap node."""
         if bootstrap_address is None:
@@ -203,6 +204,7 @@ class ChordNode:
             ##print(f"Error joining network: {e}")
             return False
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def init_finger_table(self, bootstrap_address):
         """Initialize the finger table using entries from the bootstrap node."""
         
@@ -245,6 +247,7 @@ class ChordNode:
         # Update other nodes that should point to us
         self.update_others()
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def update_others(self):
         """Update all nodes whose finger tables should point to us."""
         
@@ -270,6 +273,7 @@ class ChordNode:
                 except Exception as e:
                     print(f"Error updating other node's finger table: {e}")
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def update_finger_table(self, s, i):
         """Update the i-th finger table entry to s if appropriate."""
         if (self.finger_table[i]["successor"]["node_id"] == self.node_id or 
@@ -289,6 +293,7 @@ class ChordNode:
             return True
         return False
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def notify_successor(self):
         """Notify our successor that we might be its predecessor."""
         try:
@@ -302,6 +307,7 @@ class ChordNode:
         except Exception as e:
             return False
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def notify(self, node):
         """Process notification from another node that it might be our predecessor."""
         if (self.predecessor is None or 
@@ -311,7 +317,7 @@ class ChordNode:
             return True
         return False
 
-    """REMOVE THIS TEMPORARY CODE WHEN IMPLEMENTING THE STABILIZATION ALGORITHM"""
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def update_predecessor_successor(self):
         """Ask our predecessor to set its successor pointer to this node if appropriate."""
         if self.predecessor is None:
@@ -327,6 +333,7 @@ class ChordNode:
         except Exception as e:
             return False
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def transfer_keys_from_successor(self, lower_bound=None):
         """Request keys from successor that should now belong to us."""
         if self.successor["node_id"] == self.node_id:
@@ -348,6 +355,7 @@ class ChordNode:
         except Exception as e:
             return False
 
+    #AUTHOR: Kruthik Jonnagaddala Thyagaraja
     def transfer_keys_to_predecessor(self, new_pred_id, lower_bound=None):
         """Transfer keys that should belong to a new predecessor.
         If lower_bound is provided, use it as the lower bound of the interval;

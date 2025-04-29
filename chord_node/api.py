@@ -35,6 +35,7 @@ def stabilization_loop(node):
             print(f"[Background Thread Error] {e}")
         time.sleep(2)  # run every 5 seconds
 
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({
@@ -109,7 +110,7 @@ def find_predecessor():
     predecessor = node.find_predecessor(key_id)
     return jsonify(predecessor)
 
-# REMOVE THIS WHEN STABILIZATION IS IMPLEMENTED
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/set_successor', methods=['POST'])
 def set_successor():
     data = request.get_json()
@@ -120,7 +121,7 @@ def set_successor():
     # print(f"set_successor: Updated successor to {new_successor['node_id']}")
     return jsonify({"message": f"Successor updated to {new_successor['node_id']}"}), 200
 
-
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/update_finger_table', methods=['POST'])
 def update_finger_table():
     data = request.get_json()
@@ -129,6 +130,7 @@ def update_finger_table():
     result = node.update_finger_table(s, i)
     return jsonify({"success": result})
 
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/transfer_keys', methods=['POST'])
 def transfer_keys():
     data = request.get_json()
@@ -215,6 +217,7 @@ def lookup_key(key):
             "node_id": node.node_id
         }), 500
 
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/join', methods=['POST'])
 def join():
     bootstrap_address = request.data.decode().strip()
@@ -270,6 +273,7 @@ def receive_keys():
     return jsonify({"status": "received"}), 200
 
 
+#AUTHOR: Kruthik Jonnagaddala Thyagaraja
 @app.route('/finger_table', methods=['GET'])
 def get_finger_table():
     return jsonify({
