@@ -1,3 +1,7 @@
+------ AUTHOR: Harikrishnan Venkatesh ------
+
+Reference for Key Hashes:
+
 key1 hashed to:  39
 key2 hashed to:  12
 key3 hashed to:  57
