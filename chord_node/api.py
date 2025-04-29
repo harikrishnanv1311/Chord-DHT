@@ -71,33 +71,38 @@ def get_node_info():
         "m": node.m
     })
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/successor', methods=['GET'])
 def get_successor():
     return jsonify(node.successor)
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/get_predecessor', methods=['GET'])
 def get_predecessor():
     if node.predecessor:
         return jsonify(node.predecessor)
     return jsonify(None)
-
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/notify', methods=['POST'])
 def notify():
     data = request.get_json()
     result = node.notify(data)
     return jsonify({"success": result})
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/closest_preceding_finger', methods=['GET'])
 def closest_preceding_finger():
     key_id = int(request.args.get("key_id"))
     return jsonify(node.closest_preceding_finger(key_id))
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/find_successor', methods=['GET'])
 def find_successor():
     key_id = int(request.args.get("key_id"))
     successor = node.find_successor(key_id)
     return jsonify(successor)
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/find_predecessor', methods=['GET'])
 def find_predecessor():
     key_id = int(request.args.get("key_id"))
@@ -132,6 +137,7 @@ def transfer_keys():
     keys = node.transfer_keys_to_predecessor(new_pred_id, lower_bound)
     return jsonify({"keys": keys})
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/store/<key>', methods=['POST'])
 def store_key(key):
     value = request.data.decode()
@@ -166,6 +172,7 @@ def store_key(key):
             "node_id": node.node_id
         }), 500
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/lookup/<key>', methods=['GET'])
 def lookup_key(key):
     forwarded = request.args.get("forwarded", "0") == "1"
@@ -270,6 +277,7 @@ def get_finger_table():
         "finger_table": node.finger_table
     })
 
+#AUTHOR: Harikrishnan Venkatesh
 @app.route('/data_store', methods=['GET'])
 def get_data_store():
     return jsonify({
