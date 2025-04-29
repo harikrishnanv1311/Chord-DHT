@@ -6,6 +6,7 @@ import time
 
 
 class ChordNode:
+    #AUTHOR: Harikrishnan Venkatesh
     def __init__(self, ip, port, m=160):
         self.ip = ip
         self.port = port
@@ -21,26 +22,30 @@ class ChordNode:
                            for i in range(self.m)]
         ##print(f"Node initialized with ID: {self.node_id}")
 
+    #AUTHOR: Harikrishnan Venkatesh
     def hash_ip(self, ip, port):
         """Hash the IP:port combination to get a node identifier in the Chord ring."""
         h = hashlib.sha1(f"{ip}:{port}".encode()).hexdigest()
         return int(h, 16) % (2**self.m)
 
+    #AUTHOR: Harikrishnan Venkatesh
     def hash_key(self, key):
         """Hash a key to determine its position in the Chord ring."""
         h = hashlib.sha1(key.encode()).hexdigest()
         return int(h, 16) % (2**self.m)
-
+        
+    #AUTHOR: Harikrishnan Venkatesh
     def store_data(self, key, value):
         """Store data in the local key-value store."""
         self.data_store[key] = value
         ##print(f"Stored key '{key}' -> '{value}' at node {self.node_id}")
         return True
-
+    #AUTHOR: Harikrishnan Venkatesh
     def get_data(self, key):
         """Retrieve data from the local key-value store."""
         return self.data_store.get(key, None)
-
+        
+    #AUTHOR: Harikrishnan Venkatesh
     def in_interval(self, x, a, b, inclusive_right=True, inclusive_left=False):
         """Check if x is in the interval (a, b] on a circular space."""
         if inclusive_left:
@@ -62,12 +67,14 @@ class ChordNode:
         else:  # Wrap-around
             return x > a or x < b or (inclusive_right and x == b) or (inclusive_left and x == a)
 
+    #AUTHOR: Harikrishnan Venkatesh
     def is_responsible(self, key_id):
         """Determine if this node is responsible for the given key_id."""
         if self.predecessor is None:
             return True  # Only node in network
         return self.in_interval(key_id, self.predecessor["node_id"], self.node_id, inclusive_right=True)
-
+        
+    #AUTHOR: Harikrishnan Venkatesh
     def closest_preceding_finger(self, key_id):
         """Find the closest preceding finger for a key_id."""
         for i in range(self.m - 1, -1, -1):
@@ -77,6 +84,7 @@ class ChordNode:
                     return candidate
         return {"node_id": self.node_id, "ip": self.ip, "port": self.port}
 
+    #AUTHOR: Harikrishnan Venkatesh
     def find_successor(self, key_id):
         """Find the successor node for a key_id."""
         # If key_id is in (n, successor], return successor
@@ -101,7 +109,8 @@ class ChordNode:
             return self.successor  # Fallback
         
         return self.successor  # Fallback
-
+        
+    #AUTHOR: Harikrishnan Venkatesh
     def find_predecessor(self, key_id):
         """Find the predecessor node for a key_id."""
         if self.successor["node_id"] == self.node_id:
