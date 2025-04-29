@@ -1,4 +1,4 @@
-# AUTHOR: Harikrishnan Venkatesh
+# AUTHORS: Harikrishnan Venkatesh, Kruthik Jonnagaddala Thyagaraja
 
 #!/bin/bash
 
