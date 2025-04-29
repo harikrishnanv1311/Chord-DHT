@@ -46,7 +46,7 @@ Each node runs as a Docker container with its own IP and port. The `ChordNode` c
 
 ### Environment & Tools
 
-- **Docker Compose**: to simulate 5+ containerized nodes.
+- **Docker Compose**: to simulate 40+ containerized nodes.
 - **Python + Flask**: lightweight web API layer.
 - **Shell Scripts**: automated test orchestration.
 - **Visualization**: use of `/data_store`, `/network_state` etc. for checking correctness.
@@ -130,8 +130,8 @@ Logs are color-coded and structured for clarity.
 
 ## Next Steps
 
-- Stress test with 40+ nodes and generate average hop plots.
-- Compare lookup performance for bootstrap-only vs random routing.
-- Extend visualization with browser-based ring viewer.
-- Add fault injection to simulate node crashes.
+- Load Balancing through Virtual Nodes.
+- Node Failure
+-- Successor Chaining
+-- Key Replication
 
