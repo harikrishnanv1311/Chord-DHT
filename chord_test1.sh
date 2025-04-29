@@ -1,3 +1,5 @@
+# AUTHOR: Harikrishnan Venkatesh
+
 #!/bin/bash
 
 set -e
